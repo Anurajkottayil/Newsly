@@ -1,0 +1,58 @@
+/// Centralized user-facing strings for the Newsly application.
+class AppStrings {
+  AppStrings._();
+
+  // Application
+  static const String appName = 'Newsly';
+  static const String appTagline = 'Stay Informed with Space & Tech News';
+
+  // Navigation / Tabs
+  static const String articles = 'Articles';
+  static const String blogs = 'Blogs';
+  static const String bookmarks = 'Bookmarks';
+  static const String settings = 'Settings';
+
+  // Common Labels
+  static const String readMore = 'Read More';
+  static const String search = 'Search';
+  static const String searchHint = 'Search articles and blogs...';
+  static const String publishedOn = 'Published';
+  static const String author = 'Author';
+  static const String source = 'Source';
+  static const String filter = 'Filter';
+  static const String clear = 'Clear';
+  static const String retry = 'Retry';
+  static const String tryAgain = 'Try Again';
+  static const String back = 'Back';
+  static const String share = 'Share';
+
+  // Loading Messages
+  static const String loadingArticles = 'Loading latest articles...';
+  static const String loadingBlogs = 'Loading latest blogs...';
+  static const String loadingDetails = 'Fetching details...';
+  static const String loadingGeneral = 'Please wait...';
+
+  // Empty State Messages
+  static const String noArticlesTitle = 'No Articles Found';
+  static const String noArticlesSubtitle =
+      'There are currently no articles available. Try refreshing or check back later.';
+  static const String noBlogsTitle = 'No Blogs Found';
+  static const String noBlogsSubtitle =
+      'There are currently no blogs available. Try refreshing or check back later.';
+  static const String noSearchResultsTitle = 'No Results Found';
+  static const String noSearchResultsSubtitle =
+      'We could not find anything matching your query. Try a different search term.';
+
+  // Error Messages
+  static const String genericError =
+      'An unexpected error occurred. Please try again.';
+  static const String networkError =
+      'No internet connection. Please check your network settings and try again.';
+  static const String timeoutError =
+      'The connection timed out. Please verify your connection and retry.';
+  static const String serverError =
+      'Our servers encountered an issue. Please try again later.';
+  static const String notFoundError = 'The requested content was not found.';
+  static const String unauthorizedError =
+      'Authentication failed. Please check your credentials.';
+}
