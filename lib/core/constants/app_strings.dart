@@ -10,6 +10,7 @@ class AppStrings {
   static const String discover = 'Discover';
   static const String discoverSubtitle = 'News from all around the world';
   static const String searchHintDiscover = 'Search';
+  static const String exploreContent = 'Explore content';
 
   // Navigation / Tabs
   static const String articles = 'Articles';
@@ -19,6 +20,10 @@ class AppStrings {
 
   // Common Labels
   static const String readMore = 'Read More';
+  static const String readFullArticle = 'Read full article';
+  static const String readFullBlogPost = 'Read full blog post';
+  static const String trending = 'Trending';
+  static const String dateUnavailable = 'Date unavailable';
   static const String search = 'Search';
   static const String searchHint = 'Search articles and blogs...';
   static const String publishedOn = 'Published';

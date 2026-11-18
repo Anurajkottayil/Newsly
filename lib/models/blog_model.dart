@@ -1,4 +1,5 @@
 import 'article_model.dart';
+export 'article_model.dart' show Author, LaunchInfo, EventInfo;
 
 /// Models representing Spaceflight News API (v4) blogs and associated metadata.
 class Blog {
@@ -9,8 +10,9 @@ class Blog {
   final String imageUrl;
   final String newsSite;
   final String summary;
-  final DateTime publishedAt;
+  final DateTime? publishedAt;
   final DateTime? updatedAt;
+  final bool featured;
   final List<LaunchInfo> launches;
   final List<EventInfo> events;
 
@@ -22,8 +24,9 @@ class Blog {
     required this.imageUrl,
     required this.newsSite,
     required this.summary,
-    required this.publishedAt,
+    this.publishedAt,
     this.updatedAt,
+    this.featured = false,
     this.launches = const [],
     this.events = const [],
   });
@@ -48,11 +51,12 @@ class Blog {
       newsSite: json['news_site'] as String? ?? 'Spaceflight Blog',
       summary: json['summary'] as String? ?? '',
       publishedAt: json['published_at'] != null
-          ? DateTime.tryParse(json['published_at'].toString()) ?? DateTime.now()
-          : DateTime.now(),
+          ? DateTime.tryParse(json['published_at'].toString())
+          : null,
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'].toString())
           : null,
+      featured: json['featured'] as bool? ?? false,
       launches:
           (json['launches'] as List<dynamic>?)
               ?.whereType<Map>()
@@ -76,8 +80,9 @@ class Blog {
     'image_url': imageUrl,
     'news_site': newsSite,
     'summary': summary,
-    'published_at': publishedAt.toIso8601String(),
+    'published_at': publishedAt?.toIso8601String(),
     'updated_at': updatedAt?.toIso8601String(),
+    'featured': featured,
     'launches': launches.map((l) => l.toJson()).toList(),
     'events': events.map((e) => e.toJson()).toList(),
   };

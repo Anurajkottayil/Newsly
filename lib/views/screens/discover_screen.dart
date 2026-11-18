@@ -10,17 +10,24 @@ import '../../shared/widgets/app_error_view.dart';
 import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/article_card.dart';
 import '../../viewmodels/article_view_model.dart';
+import '../../viewmodels/blog_view_model.dart';
 import '../widgets/responsive_layout.dart';
+import 'article_detail_screen.dart';
+import 'blog_detail_screen.dart';
 
-/// Discover / News List screen implementing the exact UI design from the project specification.
+enum _ContentType { articles, blogs }
+
+/// Discover / News & Blogs List screen implementing the exact UI design from the project specification.
 ///
 /// Features:
 /// - Dark navy Discover heading and subtitle on a clean white background.
+/// - Explore content bottom sheet filter for switching between Articles and Blogs.
 /// - Rounded light-gray search bar with search icon, clear button, and filter icon.
 /// - Debounced search querying title and summary via the Spaceflight News API.
 /// - Horizontally scrollable category chips with bright blue selected state.
 /// - Compact news cards with rounded thumbnail on left, title & metadata on right.
 /// - Pull-to-refresh and infinite scroll pagination with loading & retry footers.
+/// - Independent scroll, search, and category state preservation across tabs.
 /// - Full tablet / iPad responsiveness.
 class DiscoverScreen extends StatefulWidget {
   const DiscoverScreen({super.key});
@@ -31,8 +38,11 @@ class DiscoverScreen extends StatefulWidget {
 
 class _DiscoverScreenState extends State<DiscoverScreen> {
   final TextEditingController _searchController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
+  final ScrollController _articleScrollController = ScrollController();
+  final ScrollController _blogScrollController = ScrollController();
   Timer? _debounceTimer;
+
+  _ContentType _contentType = _ContentType.articles;
 
   // Visual category chips mapped to verified content filters
   final List<String> _categories = const [
@@ -43,18 +53,29 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     'SpaceNews',
     'Science',
   ];
-  String _selectedCategory = 'All';
+
+  String _articleSelectedCategory = 'All';
+  String _blogSelectedCategory = 'All';
+  String? _articleSearchQuery;
+  String? _blogSearchQuery;
+
+  String get _selectedCategory => _contentType == _ContentType.articles
+      ? _articleSelectedCategory
+      : _blogSelectedCategory;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _articleScrollController.addListener(_onArticleScroll);
+    _blogScrollController.addListener(_onBlogScroll);
 
-    // Initial load
+    // Initial load for articles
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final viewModel = context.read<ArticleViewModel>();
-      if (viewModel.articles.isEmpty && !viewModel.isLoading) {
-        viewModel.fetchArticles();
+      final articleVm = Provider.of<ArticleViewModel?>(context, listen: false);
+      if (articleVm != null &&
+          articleVm.articles.isEmpty &&
+          !articleVm.isLoading) {
+        articleVm.fetchArticles();
       }
     });
   }
@@ -63,18 +84,32 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   void dispose() {
     _debounceTimer?.cancel();
     _searchController.dispose();
-    _scrollController.dispose();
+    _articleScrollController.dispose();
+    _blogScrollController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (!_scrollController.hasClients) return;
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.position.pixels;
+  void _onArticleScroll() {
+    if (!_articleScrollController.hasClients) return;
+    final maxScroll = _articleScrollController.position.maxScrollExtent;
+    final currentScroll = _articleScrollController.position.pixels;
 
     // Trigger pagination when reaching within 200px of the bottom
     if (currentScroll >= maxScroll - 200) {
-      context.read<ArticleViewModel>().loadMore();
+      final articleVm = Provider.of<ArticleViewModel?>(context, listen: false);
+      articleVm?.loadMore();
+    }
+  }
+
+  void _onBlogScroll() {
+    if (!_blogScrollController.hasClients) return;
+    final maxScroll = _blogScrollController.position.maxScrollExtent;
+    final currentScroll = _blogScrollController.position.pixels;
+
+    // Trigger pagination when reaching within 200px of the bottom
+    if (currentScroll >= maxScroll - 200) {
+      final blogVm = Provider.of<BlogViewModel?>(context, listen: false);
+      blogVm?.loadMore();
     }
   }
 
@@ -83,40 +118,109 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     _debounceTimer = Timer(AppConstants.searchDebounceDuration, () {
       if (!mounted) return;
       final trimmed = query.trim();
-      setState(() {
-        _selectedCategory = trimmed.isEmpty ? 'All' : '';
-      });
-      context.read<ArticleViewModel>().fetchArticles(
-        search: trimmed,
-        refresh: true,
-      );
+      if (_contentType == _ContentType.articles) {
+        setState(() {
+          _articleSearchQuery = trimmed.isEmpty ? null : trimmed;
+          _articleSelectedCategory = trimmed.isEmpty ? 'All' : '';
+        });
+        final articleVm = Provider.of<ArticleViewModel?>(
+          context,
+          listen: false,
+        );
+        articleVm?.fetchArticles(search: trimmed, refresh: true);
+      } else {
+        setState(() {
+          _blogSearchQuery = trimmed.isEmpty ? null : trimmed;
+          _blogSelectedCategory = trimmed.isEmpty ? 'All' : '';
+        });
+        final blogVm = Provider.of<BlogViewModel?>(context, listen: false);
+        blogVm?.fetchBlogs(search: trimmed, refresh: true);
+      }
     });
   }
 
   void _onCategorySelected(String category) {
     if (_selectedCategory == category) return;
 
-    setState(() {
-      _selectedCategory = category;
-      _searchController.text = category == 'All' ? '' : category;
-    });
+    if (_contentType == _ContentType.articles) {
+      setState(() {
+        _articleSelectedCategory = category;
+        _articleSearchQuery = category == 'All' ? null : category;
+        _searchController.text = category == 'All' ? '' : category;
+      });
 
-    _debounceTimer?.cancel();
-    final viewModel = context.read<ArticleViewModel>();
-    if (category == 'All') {
-      viewModel.clearSearch();
+      _debounceTimer?.cancel();
+      final viewModel = Provider.of<ArticleViewModel?>(context, listen: false);
+      if (viewModel != null) {
+        if (category == 'All') {
+          viewModel.clearSearch();
+        } else {
+          viewModel.fetchArticles(search: category, refresh: true);
+        }
+      }
     } else {
-      viewModel.fetchArticles(search: category, refresh: true);
+      setState(() {
+        _blogSelectedCategory = category;
+        _blogSearchQuery = category == 'All' ? null : category;
+        _searchController.text = category == 'All' ? '' : category;
+      });
+
+      _debounceTimer?.cancel();
+      final blogVm = Provider.of<BlogViewModel?>(context, listen: false);
+      if (blogVm != null) {
+        if (category == 'All') {
+          blogVm.clearSearch();
+        } else {
+          blogVm.fetchBlogs(search: category, refresh: true);
+        }
+      }
     }
   }
 
   void _clearSearch() {
     _debounceTimer?.cancel();
     _searchController.clear();
+
+    if (_contentType == _ContentType.articles) {
+      setState(() {
+        _articleSelectedCategory = 'All';
+        _articleSearchQuery = null;
+      });
+      final articleVm = Provider.of<ArticleViewModel?>(context, listen: false);
+      articleVm?.clearSearch();
+    } else {
+      setState(() {
+        _blogSelectedCategory = 'All';
+        _blogSearchQuery = null;
+      });
+      final blogVm = Provider.of<BlogViewModel?>(context, listen: false);
+      blogVm?.clearSearch();
+    }
+  }
+
+  void _onContentTypeChanged(_ContentType type) {
+    if (_contentType == type) return;
+
+    _debounceTimer?.cancel();
     setState(() {
-      _selectedCategory = 'All';
+      _contentType = type;
+      if (type == _ContentType.articles) {
+        _searchController.text =
+            _articleSearchQuery ??
+            (_articleSelectedCategory == 'All' ? '' : _articleSelectedCategory);
+      } else {
+        _searchController.text =
+            _blogSearchQuery ??
+            (_blogSelectedCategory == 'All' ? '' : _blogSelectedCategory);
+      }
     });
-    context.read<ArticleViewModel>().clearSearch();
+
+    if (type == _ContentType.blogs) {
+      final blogVm = Provider.of<BlogViewModel?>(context, listen: false);
+      if (blogVm != null && blogVm.blogs.isEmpty && !blogVm.isLoading) {
+        blogVm.fetchBlogs();
+      }
+    }
   }
 
   @override
@@ -146,12 +250,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
               const SizedBox(height: AppDimensions.space16),
 
-              // 4. Horizontal Category Chips
+              // 5. Horizontal Category Chips
               _buildCategoryChips(context, isDark),
 
               const SizedBox(height: AppDimensions.space12),
 
-              // 5. News List / State Views
+              // 6. News List / State Views
               Expanded(child: _buildBody(context, isDark)),
             ],
           ),
@@ -272,10 +376,177 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 splashRadius: 18,
                 onPressed: _clearSearch,
               ),
-            Padding(
-              padding: const EdgeInsets.only(right: AppDimensions.space16),
-              child: Icon(Icons.tune_rounded, color: iconColor, size: 20),
+            IconButton(
+              key: const ValueKey('search_filter_button'),
+              icon: const Icon(Icons.tune_rounded, size: 20),
+              color: iconColor,
+              splashRadius: 20,
+              padding: const EdgeInsets.only(right: AppDimensions.space12),
+              tooltip: AppStrings.filter,
+              onPressed: () => _showContentTypeFilterSheet(context, isDark),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showContentTypeFilterSheet(BuildContext context, bool isDark) {
+    final sheetBg = isDark ? AppColors.surfaceDark : Colors.white;
+    final primaryTextColor = isDark
+        ? AppColors.textPrimaryDark
+        : AppColors.textPrimaryLight;
+    final secondaryTextColor = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondaryLight;
+    final activeColor = isDark
+        ? AppColors.primaryLight
+        : const Color(0xFF2563EB);
+    final handleColor = isDark
+        ? AppColors.surfaceVariantDark
+        : const Color(0xFFE2E8F0);
+
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: sheetBg,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppDimensions.radiusXl),
+        ),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppDimensions.space20,
+              AppDimensions.space12,
+              AppDimensions.space20,
+              AppDimensions.space20,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: handleColor,
+                      borderRadius: BorderRadius.circular(
+                        AppDimensions.radiusFull,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppDimensions.space16),
+                // Title
+                Text(
+                  AppStrings.exploreContent,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: primaryTextColor,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: AppDimensions.space16),
+                // Articles option
+                _buildContentTypeOption(
+                  context: sheetContext,
+                  key: const ValueKey('filter_option_articles'),
+                  title: AppStrings.articles,
+                  icon: Icons.article_outlined,
+                  isSelected: _contentType == _ContentType.articles,
+                  activeColor: activeColor,
+                  primaryTextColor: primaryTextColor,
+                  secondaryTextColor: secondaryTextColor,
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _onContentTypeChanged(_ContentType.articles);
+                  },
+                ),
+                const SizedBox(height: AppDimensions.space8),
+                // Blogs option
+                _buildContentTypeOption(
+                  context: sheetContext,
+                  key: const ValueKey('filter_option_blogs'),
+                  title: AppStrings.blogs,
+                  icon: Icons.rss_feed_rounded,
+                  isSelected: _contentType == _ContentType.blogs,
+                  activeColor: activeColor,
+                  primaryTextColor: primaryTextColor,
+                  secondaryTextColor: secondaryTextColor,
+                  onTap: () {
+                    Navigator.of(sheetContext).pop();
+                    _onContentTypeChanged(_ContentType.blogs);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildContentTypeOption({
+    required BuildContext context,
+    required Key key,
+    required String title,
+    required IconData icon,
+    required bool isSelected,
+    required Color activeColor,
+    required Color primaryTextColor,
+    required Color secondaryTextColor,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final selectedBg = isDark
+        ? activeColor.withValues(alpha: 0.15)
+        : activeColor.withValues(alpha: 0.08);
+
+    return InkWell(
+      key: key,
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.space16,
+          vertical: AppDimensions.space12,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? selectedBg : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          border: isSelected
+              ? Border.all(
+                  color: activeColor.withValues(alpha: 0.3),
+                  width: 1,
+                )
+              : Border.all(color: Colors.transparent, width: 1),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 22,
+              color: isSelected ? activeColor : secondaryTextColor,
+            ),
+            const SizedBox(width: AppDimensions.space12),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: isSelected ? activeColor : primaryTextColor,
+                ),
+              ),
+            ),
+            if (isSelected)
+              Icon(Icons.check_circle_rounded, size: 20, color: activeColor),
           ],
         ),
       ),
@@ -333,6 +604,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   Widget _buildBody(BuildContext context, bool isDark) {
+    if (_contentType == _ContentType.articles) {
+      return _buildArticleBody(context, isDark);
+    } else {
+      return _buildBlogBody(context, isDark);
+    }
+  }
+
+  Widget _buildArticleBody(BuildContext context, bool isDark) {
     final viewModel = context.watch<ArticleViewModel>();
 
     // 1. Initial Loading State
@@ -368,7 +647,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     return RefreshIndicator(
       onRefresh: () => viewModel.fetchArticles(refresh: true),
       child: ListView.builder(
-        controller: _scrollController,
+        key: const PageStorageKey('articles_feed_list'),
+        controller: _articleScrollController,
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(
           horizontal: AppDimensions.space20,
@@ -384,7 +664,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           // Pagination footer
           if (index == viewModel.articles.length) {
             if (viewModel.paginationError != null) {
-              return _buildPaginationErrorFooter(viewModel, isDark);
+              return _buildArticlePaginationErrorFooter(viewModel, isDark);
             }
             return _buildPaginationLoadingFooter(isDark);
           }
@@ -393,7 +673,90 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           return ArticleCard.fromArticle(
             article: article,
             onTap: () {
-              // Reserved for Phase 4: Article Detail Navigation
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ArticleDetailScreen(
+                    initialArticleId: article.id,
+                    initialIndex: index,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBlogBody(BuildContext context, bool isDark) {
+    final viewModel = context.watch<BlogViewModel>();
+
+    // 1. Initial Loading State
+    if (viewModel.isLoading && viewModel.blogs.isEmpty) {
+      return const AppLoader(message: AppStrings.loadingBlogs);
+    }
+
+    // 2. Full-Screen Error State
+    if (viewModel.hasError && viewModel.blogs.isEmpty) {
+      return AppErrorView(
+        message: viewModel.errorMessage ?? AppStrings.genericError,
+        onRetry: () => viewModel.fetchBlogs(refresh: true),
+      );
+    }
+
+    // 3. Empty State (No Blogs / No Search Results)
+    if (viewModel.isEmpty) {
+      final isSearching =
+          viewModel.searchQuery != null && viewModel.searchQuery!.isNotEmpty;
+      return AppEmptyView(
+        title: isSearching
+            ? AppStrings.noSearchResultsTitle
+            : AppStrings.noBlogsTitle,
+        message: isSearching
+            ? AppStrings.noSearchResultsSubtitle
+            : AppStrings.noBlogsSubtitle,
+        actionLabel: AppStrings.retry,
+        onAction: _clearSearch,
+      );
+    }
+
+    // 4. Loaded Blogs List
+    return RefreshIndicator(
+      onRefresh: () => viewModel.fetchBlogs(refresh: true),
+      child: ListView.builder(
+        key: const PageStorageKey('blogs_feed_list'),
+        controller: _blogScrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.space20,
+          vertical: AppDimensions.space8,
+        ),
+        itemCount:
+            viewModel.blogs.length +
+            (viewModel.isLoadingMore || viewModel.paginationError != null
+                ? 1
+                : 0),
+        itemBuilder: (context, index) {
+          // Pagination footer
+          if (index == viewModel.blogs.length) {
+            if (viewModel.paginationError != null) {
+              return _buildBlogPaginationErrorFooter(viewModel, isDark);
+            }
+            return _buildPaginationLoadingFooter(isDark);
+          }
+
+          final blog = viewModel.blogs[index];
+          return ArticleCard.fromBlog(
+            blog: blog,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => BlogDetailScreen(
+                    initialBlogId: blog.id,
+                    initialIndex: index,
+                  ),
+                ),
+              );
             },
           );
         },
@@ -414,7 +777,34 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 
-  Widget _buildPaginationErrorFooter(ArticleViewModel viewModel, bool isDark) {
+  Widget _buildArticlePaginationErrorFooter(
+    ArticleViewModel viewModel,
+    bool isDark,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppDimensions.space16),
+      child: Column(
+        children: [
+          Text(
+            viewModel.paginationError ?? AppStrings.genericError,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12, color: AppColors.error),
+          ),
+          const SizedBox(height: AppDimensions.space8),
+          TextButton.icon(
+            onPressed: viewModel.retryLoadMore,
+            icon: const Icon(Icons.refresh_rounded, size: 16),
+            label: const Text(
+              AppStrings.retry,
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlogPaginationErrorFooter(BlogViewModel viewModel, bool isDark) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppDimensions.space16),
       child: Column(

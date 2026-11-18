@@ -17,7 +17,7 @@ class ArticleCard extends StatelessWidget {
   final String imageUrl;
   final String newsSite;
   final String summary;
-  final DateTime publishedAt;
+  final DateTime? publishedAt;
   final String? authorName;
   final bool featured;
   final VoidCallback? onTap;
@@ -29,7 +29,7 @@ class ArticleCard extends StatelessWidget {
     required this.imageUrl,
     required this.newsSite,
     required this.summary,
-    required this.publishedAt,
+    this.publishedAt,
     this.authorName,
     this.featured = false,
     this.onTap,
@@ -72,12 +72,13 @@ class ArticleCard extends StatelessWidget {
       summary: blog.summary,
       publishedAt: blog.publishedAt,
       authorName: blog.authors.isNotEmpty ? blog.authors.first.name : null,
-      featured: false,
+      featured: blog.featured,
       onTap: onTap,
     );
   }
 
-  String _formatDate(DateTime dateTime) {
+  String _formatDate(DateTime? dateTime) {
+    if (dateTime == null) return 'Date unavailable';
     const months = [
       'Jan',
       'Feb',
