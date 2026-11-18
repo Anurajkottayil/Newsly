@@ -189,6 +189,7 @@ void main() {
         'summary': 'An analysis of commercial space transport trends.',
         'published_at': '2026-05-20T08:00:00Z',
         'updated_at': null,
+        'featured': true,
         'launches': [],
         'events': [],
       };
@@ -202,6 +203,12 @@ void main() {
       expect(blog.newsSite, 'Space News Weekly');
       expect(blog.publishedAt, DateTime.parse('2026-05-20T08:00:00Z'));
       expect(blog.updatedAt, isNull);
+      expect(blog.featured, isTrue);
+
+      // Verify serialization round-trip
+      final serialized = blog.toJson();
+      expect(serialized['id'], 1050);
+      expect(serialized['featured'], isTrue);
     });
 
     test('Safely handles missing and null fields in Blog', () {
@@ -216,7 +223,8 @@ void main() {
       expect(blog.id, 0);
       expect(blog.title, '');
       expect(blog.imageUrl, '');
-      expect(blog.publishedAt, isA<DateTime>());
+      expect(blog.publishedAt, isNull);
+      expect(blog.featured, isFalse);
       expect(blog.launches, isEmpty);
       expect(blog.events, isEmpty);
     });
@@ -868,5 +876,153 @@ void main() {
       expect(viewModel.blogs.length, 2);
       expect(viewModel.blogs.map((b) => b.id).toList(), [50, 51]);
     });
+
+    test(
+      'loadMore failure isolates paginationError and preserves loaded blogs',
+      () async {
+        final fakeClient = FakeApiClient(
+          responseData: {
+            'count': 2,
+            'next':
+                'https://api.spaceflightnewsapi.net/v4/blogs/?limit=1&offset=1',
+            'previous': null,
+            'results': [
+              {
+                'id': 1,
+                'title': 'Blog 1',
+                'authors': [],
+                'url': 'https://example.com/1',
+                'image_url': '',
+                'news_site': 'Source',
+                'summary': '',
+                'published_at': '2026-01-01T00:00:00Z',
+              },
+            ],
+          },
+        );
+
+        final repository = BlogRepositoryImpl(apiClient: fakeClient);
+        final viewModel = BlogViewModel(repository);
+
+        await viewModel.fetchBlogs();
+        expect(viewModel.blogs.length, 1);
+        expect(viewModel.state, ViewState.loaded);
+        expect(viewModel.paginationError, isNull);
+        expect(viewModel.errorMessage, isNull);
+
+        // Simulate failure on pagination
+        fakeClient.exceptionToThrow = const ApiException(
+          message: 'Pagination network failure',
+          type: ApiExceptionType.network,
+        );
+
+        await viewModel.loadMore();
+
+        // Verify pagination error is isolated
+        expect(viewModel.paginationError, 'Pagination network failure');
+        expect(viewModel.errorMessage, isNull);
+        expect(viewModel.state, ViewState.loaded);
+        expect(viewModel.blogs.length, 1);
+
+        // Clear exception and retry
+        fakeClient.exceptionToThrow = null;
+        fakeClient.responseData = {
+          'count': 2,
+          'next': null,
+          'previous': null,
+          'results': [
+            {
+              'id': 2,
+              'title': 'Blog 2',
+              'authors': [],
+              'url': 'https://example.com/2',
+              'image_url': '',
+              'news_site': 'Source',
+              'summary': '',
+              'published_at': '2026-01-02T00:00:00Z',
+            },
+          ],
+        };
+
+        await viewModel.retryLoadMore();
+
+        expect(viewModel.paginationError, isNull);
+        expect(viewModel.blogs.length, 2);
+      },
+    );
+
+    test(
+      'loadMore failure isolates paginationError and preserves loaded blogs',
+      () async {
+        final fakeClient = FakeApiClient(
+          responseData: {
+            'count': 2,
+            'next':
+                'https://api.spaceflightnewsapi.net/v4/blogs/?limit=1&offset=1',
+            'previous': null,
+            'results': [
+              {
+                'id': 1,
+                'title': 'Blog 1',
+                'authors': [],
+                'url': 'https://example.com/1',
+                'image_url': '',
+                'news_site': 'Source',
+                'summary': '',
+                'published_at': '2026-01-01T00:00:00Z',
+              },
+            ],
+          },
+        );
+
+        final repository = BlogRepositoryImpl(apiClient: fakeClient);
+        final viewModel = BlogViewModel(repository);
+
+        await viewModel.fetchBlogs();
+        expect(viewModel.blogs.length, 1);
+        expect(viewModel.state, ViewState.loaded);
+        expect(viewModel.paginationError, isNull);
+        expect(viewModel.errorMessage, isNull);
+
+        // Simulate failure on pagination
+        fakeClient.exceptionToThrow = const ApiException(
+          message: 'Pagination network failure',
+          type: ApiExceptionType.network,
+        );
+
+        await viewModel.loadMore();
+
+        // Verify pagination error is isolated
+        expect(viewModel.paginationError, 'Pagination network failure');
+        expect(viewModel.errorMessage, isNull);
+        expect(viewModel.state, ViewState.loaded);
+        expect(viewModel.blogs.length, 1);
+
+        // Clear exception and retry
+        fakeClient.exceptionToThrow = null;
+        fakeClient.responseData = {
+          'count': 2,
+          'next': null,
+          'previous': null,
+          'results': [
+            {
+              'id': 2,
+              'title': 'Blog 2',
+              'authors': [],
+              'url': 'https://example.com/2',
+              'image_url': '',
+              'news_site': 'Source',
+              'summary': '',
+              'published_at': '2026-01-02T00:00:00Z',
+            },
+          ],
+        };
+
+        await viewModel.retryLoadMore();
+
+        expect(viewModel.paginationError, isNull);
+        expect(viewModel.blogs.length, 2);
+      },
+    );
   });
 }

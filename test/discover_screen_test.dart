@@ -5,13 +5,18 @@ import 'package:newsly/core/constants/app_strings.dart';
 import 'package:newsly/core/errors/api_exception.dart';
 import 'package:newsly/core/theme/app_theme.dart';
 import 'package:newsly/models/article_model.dart';
+import 'package:newsly/models/blog_model.dart';
 import 'package:newsly/repositories/article_repository.dart';
+import 'package:newsly/repositories/blog_repository.dart';
 import 'package:newsly/shared/widgets/app_empty_view.dart';
 import 'package:newsly/shared/widgets/app_error_view.dart';
 import 'package:newsly/shared/widgets/app_loader.dart';
 import 'package:newsly/shared/widgets/article_card.dart';
 import 'package:newsly/viewmodels/article_view_model.dart';
+import 'package:newsly/viewmodels/blog_view_model.dart';
 import 'package:newsly/views/screens/discover_screen.dart';
+import 'package:newsly/views/screens/article_detail_screen.dart';
+import 'package:newsly/views/screens/blog_detail_screen.dart';
 import 'package:provider/provider.dart';
 
 /// Test mock implementation of [ArticleRepository] for UI state tests.
@@ -65,12 +70,65 @@ class MockArticleRepository implements ArticleRepository {
   }
 }
 
-Widget createTestWidget({required ArticleRepository repository}) {
+/// Test mock implementation of [BlogRepository] for UI state tests.
+class MockBlogRepository implements BlogRepository {
+  List<Blog> blogsToReturn;
+  String? nextUrl;
+  bool shouldThrow;
+  String errorMessage;
+  int callCount = 0;
+  String? lastSearch;
+  int? lastOffset;
+
+  MockBlogRepository({
+    this.blogsToReturn = const [],
+    this.nextUrl,
+    this.shouldThrow = false,
+    this.errorMessage = 'Network error',
+  });
+
+  @override
+  Future<PaginatedBlogs> getBlogs({
+    int limit = 10,
+    int offset = 0,
+    String? search,
+  }) async {
+    callCount++;
+    lastOffset = offset;
+    lastSearch = search;
+
+    if (shouldThrow) {
+      throw ApiException(message: errorMessage, type: ApiExceptionType.network);
+    }
+
+    return PaginatedBlogs(
+      count: blogsToReturn.length + (nextUrl != null ? 10 : 0),
+      next: nextUrl,
+      previous: null,
+      results: blogsToReturn,
+    );
+  }
+
+  @override
+  Future<Blog> getBlogById(int id) async {
+    return blogsToReturn.firstWhere((b) => b.id == id);
+  }
+}
+
+Widget createTestWidget({
+  required ArticleRepository repository,
+  BlogRepository? blogRepository,
+}) {
+  final blogRepo = blogRepository ?? MockBlogRepository();
   return MultiProvider(
     providers: [
       Provider<ArticleRepository>.value(value: repository),
+      Provider<BlogRepository>.value(value: blogRepo),
       ChangeNotifierProvider<ArticleViewModel>(
         create: (_) => ArticleViewModel(repository),
+      ),
+      ChangeNotifierProvider<BlogViewModel>(
+        create: (_) => BlogViewModel(blogRepo),
       ),
     ],
     child: MaterialApp(
@@ -342,5 +400,194 @@ void main() {
       expect(mockRepo.callCount, 2);
       expect(mockRepo.lastOffset, 10);
     });
+
+    testWidgets(
+      'Tapping an article card opens ArticleDetailScreen and back returns to Discover',
+      (WidgetTester tester) async {
+        final mockRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+
+        await tester.pumpWidget(createTestWidget(repository: mockRepo));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Tap the first article card
+        await tester.tap(
+          find.text('What Training Do Volleyball Players Need?'),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+
+        // Expect ArticleDetailScreen is open and showing the article
+        expect(find.byType(ArticleDetailScreen), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(ArticleDetailScreen),
+            matching: find.text('What Training Do Volleyball Players Need?'),
+          ),
+          findsOneWidget,
+        );
+        expect(find.text(AppStrings.readFullArticle), findsOneWidget);
+
+        // Tap the back button on ArticleDetailScreen
+        await tester.tap(
+          find.descendant(
+            of: find.byType(ArticleDetailScreen),
+            matching: find.byTooltip(AppStrings.back),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Back on Discover screen and articles are preserved
+        expect(find.byType(ArticleDetailScreen), findsNothing);
+        expect(find.text(AppStrings.discover), findsOneWidget);
+        expect(find.byType(ArticleCard), findsNWidgets(2));
+      },
+    );
+
+    testWidgets(
+      'Articles / Blogs toggle switches feeds and preserves loaded state',
+      (WidgetTester tester) async {
+        final sampleBlogs = [
+          Blog(
+            id: 201,
+            title: 'Sample Spaceflight Blog Post',
+            authors: const [Author(name: 'Blogger')],
+            url: 'https://example.com/blog/201',
+            imageUrl: '',
+            newsSite: 'NASA Blog',
+            summary: 'Summary of blog post.',
+            publishedAt: DateTime(2023, 3, 1),
+            featured: true,
+          ),
+        ];
+
+        final mockArticleRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+        final mockBlogRepo = MockBlogRepository(blogsToReturn: sampleBlogs);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            repository: mockArticleRepo,
+            blogRepository: mockBlogRepo,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Articles are showing
+        expect(find.byType(ArticleCard), findsNWidgets(2));
+        expect(
+          find.text('What Training Do Volleyball Players Need?'),
+          findsOneWidget,
+        );
+        expect(mockBlogRepo.callCount, 0);
+
+        // Verify segmented tab selector is removed
+        expect(find.byKey(const ValueKey('blogs_tab')), findsNothing);
+        expect(find.byKey(const ValueKey('articles_tab')), findsNothing);
+
+        // Open filter bottom sheet
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+
+        expect(find.text(AppStrings.exploreContent), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('filter_option_blogs')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const ValueKey('filter_option_articles')),
+          findsOneWidget,
+        );
+
+        // Tap Blogs option
+        await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+        await tester.pumpAndSettle();
+
+        // Verify blog is fetched and displayed
+        expect(mockBlogRepo.callCount, 1);
+        expect(find.text('Sample Spaceflight Blog Post'), findsOneWidget);
+
+        // Open filter bottom sheet again to switch back to Articles
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const ValueKey('filter_option_articles')));
+        await tester.pumpAndSettle();
+
+        // Articles are immediately visible without re-fetching
+        expect(
+          find.text('What Training Do Volleyball Players Need?'),
+          findsOneWidget,
+        );
+        expect(mockArticleRepo.callCount, 1);
+      },
+    );
+
+    testWidgets(
+      'Tapping a blog card opens BlogDetailScreen and back returns to Discover',
+      (WidgetTester tester) async {
+        final sampleBlogs = [
+          Blog(
+            id: 201,
+            title: 'Sample Spaceflight Blog Post',
+            authors: const [Author(name: 'Blogger')],
+            url: 'https://example.com/blog/201',
+            imageUrl: '',
+            newsSite: 'NASA Blog',
+            summary: 'Summary of blog post.',
+            publishedAt: DateTime(2023, 3, 1),
+            featured: true,
+          ),
+        ];
+
+        final mockArticleRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+        final mockBlogRepo = MockBlogRepository(blogsToReturn: sampleBlogs);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            repository: mockArticleRepo,
+            blogRepository: mockBlogRepo,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Switch to Blogs via filter sheet
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+        await tester.pumpAndSettle();
+
+        // Tap the blog card
+        await tester.tap(find.text('Sample Spaceflight Blog Post'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+
+        // BlogDetailScreen is opened
+        expect(find.byType(BlogDetailScreen), findsOneWidget);
+        expect(find.text(AppStrings.readFullBlogPost), findsOneWidget);
+
+        // Tap back button
+        await tester.tap(
+          find.descendant(
+            of: find.byType(BlogDetailScreen),
+            matching: find.byTooltip(AppStrings.back),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Back on Discover screen, still on Blogs tab
+        expect(find.byType(BlogDetailScreen), findsNothing);
+        expect(find.text('Sample Spaceflight Blog Post'), findsOneWidget);
+      },
+    );
   });
 }

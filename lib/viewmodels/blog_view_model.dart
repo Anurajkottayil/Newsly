@@ -14,6 +14,7 @@ class BlogViewModel extends ChangeNotifier {
   ViewState _state = ViewState.initial;
   List<Blog> _blogs = [];
   String? _errorMessage;
+  String? _paginationError;
   int _totalCount = 0;
   int _currentOffset = AppConstants.initialOffset;
   bool _isLoadingMore = false;
@@ -25,6 +26,7 @@ class BlogViewModel extends ChangeNotifier {
   ViewState get state => _state;
   List<Blog> get blogs => List.unmodifiable(_blogs);
   String? get errorMessage => _errorMessage;
+  String? get paginationError => _paginationError;
   int get totalCount => _totalCount;
   bool get isLoading => _state == ViewState.loading;
   bool get isLoadingMore => _isLoadingMore;
@@ -66,6 +68,7 @@ class BlogViewModel extends ChangeNotifier {
 
     _state = ViewState.loading;
     _errorMessage = null;
+    _paginationError = null;
     notifyListeners();
 
     try {
@@ -120,6 +123,7 @@ class BlogViewModel extends ChangeNotifier {
     }
 
     _isLoadingMore = true;
+    _paginationError = null;
     notifyListeners();
 
     try {
@@ -146,15 +150,18 @@ class BlogViewModel extends ChangeNotifier {
       _state = _blogs.isEmpty ? ViewState.empty : ViewState.loaded;
     } on ApiException catch (e) {
       if (_disposed) return;
-      _errorMessage = e.message;
+      _paginationError = e.message;
     } catch (e) {
       if (_disposed) return;
-      _errorMessage = e.toString();
+      _paginationError = e.toString();
     } finally {
       _isLoadingMore = false;
       notifyListeners();
     }
   }
+
+  /// Retries loading the next page of blogs if a previous loadMore failed.
+  Future<void> retryLoadMore() => loadMore();
 
   /// Clears the active search filter and reloads the default list.
   Future<void> clearSearch() async {
