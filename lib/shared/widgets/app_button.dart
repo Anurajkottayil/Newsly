@@ -91,6 +91,10 @@ class AppButton extends StatelessWidget {
             backgroundColor: colorScheme.primary,
             foregroundColor: colorScheme.onPrimary,
             minimumSize: Size(width ?? 0, height),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.space16,
+            ),
+
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
             ),
@@ -106,6 +110,10 @@ class AppButton extends StatelessWidget {
             backgroundColor: colorScheme.secondary,
             foregroundColor: colorScheme.onSecondary,
             minimumSize: Size(width ?? 0, height),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.space16,
+            ),
+
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
             ),
@@ -121,6 +129,10 @@ class AppButton extends StatelessWidget {
             foregroundColor: colorScheme.primary,
             side: BorderSide(color: colorScheme.primary, width: 1.5),
             minimumSize: Size(width ?? 0, height),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppDimensions.space16,
+            ),
+
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
             ),

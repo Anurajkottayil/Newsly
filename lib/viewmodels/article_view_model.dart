@@ -20,6 +20,7 @@ class ArticleViewModel extends ChangeNotifier {
   int _currentOffset = AppConstants.initialOffset;
   bool _isLoadingMore = false;
   bool _hasMore = false;
+  String? _paginationError;
   String? _searchQuery;
   bool _disposed = false;
 
@@ -27,6 +28,7 @@ class ArticleViewModel extends ChangeNotifier {
   ViewState get state => _state;
   List<Article> get articles => List.unmodifiable(_articles);
   String? get errorMessage => _errorMessage;
+  String? get paginationError => _paginationError;
   int get totalCount => _totalCount;
   bool get isLoading => _state == ViewState.loading;
   bool get isLoadingMore => _isLoadingMore;
@@ -68,6 +70,7 @@ class ArticleViewModel extends ChangeNotifier {
 
     _state = ViewState.loading;
     _errorMessage = null;
+    _paginationError = null;
     notifyListeners();
 
     try {
@@ -122,6 +125,7 @@ class ArticleViewModel extends ChangeNotifier {
     }
 
     _isLoadingMore = true;
+    _paginationError = null;
     notifyListeners();
 
     try {
@@ -148,15 +152,18 @@ class ArticleViewModel extends ChangeNotifier {
       _state = _articles.isEmpty ? ViewState.empty : ViewState.loaded;
     } on ApiException catch (e) {
       if (_disposed) return;
-      _errorMessage = e.message;
+      _paginationError = e.message;
     } catch (e) {
       if (_disposed) return;
-      _errorMessage = e.toString();
+      _paginationError = e.toString();
     } finally {
       _isLoadingMore = false;
       notifyListeners();
     }
   }
+
+  /// Retries loading the next page of articles if a previous loadMore failed.
+  Future<void> retryLoadMore() => loadMore();
 
   /// Clears the active search filter and reloads the default list.
   Future<void> clearSearch() async {
