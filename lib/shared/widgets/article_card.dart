@@ -5,10 +5,12 @@ import '../../core/constants/app_dimensions.dart';
 import '../../models/article_model.dart';
 import '../../models/blog_model.dart';
 
-/// Highly reusable news card widget used for displaying both [Article] and [Blog] items.
+/// Reusable news card widget matching the reference List Screen design.
 ///
-/// Features responsive image caching with [CachedNetworkImage], placeholder shimmer,
-/// source badge, featured tag, and standardized typography.
+/// Features a compact horizontal layout:
+/// - Rounded rectangular thumbnail on the left (with CachedNetworkImage).
+/// - Category/source, bold headline title, and author/date metadata on the right.
+/// Reusable across both Articles and Blogs views.
 class ArticleCard extends StatelessWidget {
   final int id;
   final String title;
@@ -16,6 +18,7 @@ class ArticleCard extends StatelessWidget {
   final String newsSite;
   final String summary;
   final DateTime publishedAt;
+  final String? authorName;
   final bool featured;
   final VoidCallback? onTap;
 
@@ -27,6 +30,7 @@ class ArticleCard extends StatelessWidget {
     required this.newsSite,
     required this.summary,
     required this.publishedAt,
+    this.authorName,
     this.featured = false,
     this.onTap,
   });
@@ -45,6 +49,9 @@ class ArticleCard extends StatelessWidget {
       newsSite: article.newsSite,
       summary: article.summary,
       publishedAt: article.publishedAt,
+      authorName: article.authors.isNotEmpty
+          ? article.authors.first.name
+          : null,
       featured: article.featured,
       onTap: onTap,
     );
@@ -64,6 +71,7 @@ class ArticleCard extends StatelessWidget {
       newsSite: blog.newsSite,
       summary: blog.summary,
       publishedAt: blog.publishedAt,
+      authorName: blog.authors.isNotEmpty ? blog.authors.first.name : null,
       featured: false,
       onTap: onTap,
     );
@@ -91,183 +99,178 @@ class ArticleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Image Section with badges
-            Stack(
+    final primaryTextColor = isDark
+        ? AppColors.textPrimaryDark
+        : AppColors.textPrimaryLight;
+    final secondaryTextColor = isDark
+        ? AppColors.textSecondaryDark
+        : AppColors.textSecondaryLight;
+    final tertiaryTextColor = isDark
+        ? AppColors.textTertiaryDark
+        : AppColors.textTertiaryLight;
+
+    final displayName = (authorName != null && authorName!.trim().isNotEmpty)
+        ? authorName!.trim()
+        : newsSite;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppDimensions.space6),
+      child: Material(
+        color: isDark ? AppColors.cardDark : AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+          child: Padding(
+            padding: const EdgeInsets.all(AppDimensions.space8),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: imageUrl.isNotEmpty
-                      ? CachedNetworkImage(
-                          imageUrl: imageUrl,
-                          fit: BoxFit.cover,
-                          placeholder: (context, url) => Container(
-                            color: isDark
-                                ? AppColors.shimmerBaseDark
-                                : AppColors.shimmerBaseLight,
-                            child: const Center(
-                              child: SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
+                // Left: Rounded Thumbnail
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+                  child: SizedBox(
+                    width: 104,
+                    height: 104,
+                    child: imageUrl.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              color: isDark
+                                  ? AppColors.shimmerBaseDark
+                                  : AppColors.shimmerBaseLight,
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                          errorWidget: (context, url, error) => Container(
+                            errorWidget: (context, url, error) => Container(
+                              color: isDark
+                                  ? AppColors.surfaceVariantDark
+                                  : AppColors.surfaceVariantLight,
+                              child: Icon(
+                                Icons.image_not_supported_outlined,
+                                size: 28,
+                                color: tertiaryTextColor,
+                              ),
+                            ),
+                          )
+                        : Container(
                             color: isDark
                                 ? AppColors.surfaceVariantDark
                                 : AppColors.surfaceVariantLight,
                             child: Icon(
-                              Icons.image_not_supported_outlined,
-                              size: 40,
-                              color: colorScheme.onSurface.withValues(
-                                alpha: 0.3,
+                              Icons.newspaper_rounded,
+                              size: 28,
+                              color: tertiaryTextColor,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: AppDimensions.space12),
+
+                // Right: Content Column
+                Expanded(
+                  child: SizedBox(
+                    height: 104,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Category / Source
+                        Text(
+                          newsSite,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: tertiaryTextColor,
+                            letterSpacing: -0.2,
+                          ),
+                        ),
+
+                        // Title (bold, max 2 lines)
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: primaryTextColor,
+                            height: 1.25,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+
+                        // Metadata Row: Avatar + Author + Dot + Date
+                        Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 9,
+                              backgroundColor: isDark
+                                  ? AppColors.primary.withValues(alpha: 0.4)
+                                  : AppColors.primaryLight.withValues(
+                                      alpha: 0.2,
+                                    ),
+                              child: Text(
+                                displayName.isNotEmpty
+                                    ? displayName[0].toUpperCase()
+                                    : 'N',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.primary,
+                                ),
                               ),
                             ),
-                          ),
-                        )
-                      : Container(
-                          color: isDark
-                              ? AppColors.surfaceVariantDark
-                              : AppColors.surfaceVariantLight,
-                          child: Icon(
-                            Icons.newspaper_rounded,
-                            size: 40,
-                            color: colorScheme.onSurface.withValues(alpha: 0.3),
-                          ),
-                        ),
-                ),
-                // Featured Tag
-                if (featured)
-                  Positioned(
-                    top: AppDimensions.space8,
-                    left: AppDimensions.space8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppDimensions.space8,
-                        vertical: AppDimensions.space4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.warning,
-                        borderRadius: BorderRadius.circular(
-                          AppDimensions.radiusXs,
-                        ),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black26,
-                            blurRadius: 4,
-                            offset: Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.star_rounded,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'FEATURED',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.5,
+                            const SizedBox(width: AppDimensions.space6),
+                            Flexible(
+                              child: Text(
+                                displayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: secondaryTextColor,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                            Text(
+                              ' • ',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: tertiaryTextColor,
+                              ),
+                            ),
+                            Text(
+                              _formatDate(publishedAt),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: tertiaryTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
+                ),
               ],
             ),
-
-            // Text Content Section
-            Padding(
-              padding: const EdgeInsets.all(AppDimensions.space16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Meta Info (Source & Date)
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppDimensions.space8,
-                          vertical: AppDimensions.space2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(
-                            AppDimensions.radiusXs,
-                          ),
-                        ),
-                        child: Text(
-                          newsSite,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onPrimaryContainer,
-                          ),
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        _formatDate(publishedAt),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: isDark
-                              ? AppColors.textSecondaryDark
-                              : AppColors.textSecondaryLight,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppDimensions.space8),
-
-                  // Title
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      height: 1.3,
-                    ),
-                  ),
-                  const SizedBox(height: AppDimensions.space6),
-
-                  // Summary
-                  if (summary.isNotEmpty)
-                    Text(
-                      summary,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: isDark
-                            ? AppColors.textSecondaryDark
-                            : AppColors.textSecondaryLight,
-                        height: 1.4,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

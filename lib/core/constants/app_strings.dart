@@ -6,6 +6,11 @@ class AppStrings {
   static const String appName = 'Newsly';
   static const String appTagline = 'Stay Informed with Space & Tech News';
 
+  // Discover Screen Reference
+  static const String discover = 'Discover';
+  static const String discoverSubtitle = 'News from all around the world';
+  static const String searchHintDiscover = 'Search';
+
   // Navigation / Tabs
   static const String articles = 'Articles';
   static const String blogs = 'Blogs';
@@ -23,6 +28,7 @@ class AppStrings {
   static const String clear = 'Clear';
   static const String retry = 'Retry';
   static const String tryAgain = 'Try Again';
+  static const String retryLoadingMore = 'Failed to load more. Tap to retry.';
   static const String back = 'Back';
   static const String share = 'Share';
 

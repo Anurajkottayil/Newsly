@@ -71,7 +71,6 @@ class AppErrorView extends StatelessWidget {
                 label: retryLabel,
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded, size: 18),
-                width: 140,
               ),
             ],
           ],

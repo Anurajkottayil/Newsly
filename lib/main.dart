@@ -7,7 +7,7 @@ import 'repositories/article_repository.dart';
 import 'repositories/blog_repository.dart';
 import 'viewmodels/article_view_model.dart';
 import 'viewmodels/blog_view_model.dart';
-import 'views/screens/foundation_preview_screen.dart';
+import 'views/screens/discover_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +19,16 @@ void main() {
 /// Sets up Dependency Injection via MultiProvider, initializes repositories and ViewModels,
 /// and applies centralized light & dark theme configurations.
 class NewslyApp extends StatefulWidget {
-  const NewslyApp({super.key});
+  final ApiClient? apiClient;
+  final ArticleRepository? articleRepository;
+  final BlogRepository? blogRepository;
+
+  const NewslyApp({
+    super.key,
+    this.apiClient,
+    this.articleRepository,
+    this.blogRepository,
+  });
 
   @override
   State<NewslyApp> createState() => _NewslyAppState();
@@ -41,15 +50,17 @@ class _NewslyAppState extends State<NewslyApp> {
     return MultiProvider(
       providers: [
         // Core Network Client
-        Provider<ApiClient>(create: (_) => ApiClient()),
+        Provider<ApiClient>(create: (_) => widget.apiClient ?? ApiClient()),
 
         // Repositories
         ProxyProvider<ApiClient, ArticleRepository>(
           update: (_, apiClient, _) =>
+              widget.articleRepository ??
               ArticleRepositoryImpl(apiClient: apiClient),
         ),
         ProxyProvider<ApiClient, BlogRepository>(
-          update: (_, apiClient, _) => BlogRepositoryImpl(apiClient: apiClient),
+          update: (_, apiClient, _) =>
+              widget.blogRepository ?? BlogRepositoryImpl(apiClient: apiClient),
         ),
 
         // ViewModels
@@ -74,9 +85,7 @@ class _NewslyAppState extends State<NewslyApp> {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeMode,
-            home: FoundationPreviewScreen(
-              themeModeNotifier: _themeModeNotifier,
-            ),
+            home: const DiscoverScreen(),
           );
         },
       ),
