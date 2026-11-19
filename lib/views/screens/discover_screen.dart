@@ -233,7 +233,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       backgroundColor: backgroundColor,
       body: SafeArea(
         child: ResponsiveLayout(
-          maxWidth: 760, // Optimal reading container for tablets/iPads
+          maxWidth: AppDimensions.maxContentWidth,
           mobile: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -272,6 +272,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       ),
       child: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+        tooltip: AppStrings.back,
         color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
         onPressed: () {
           if (Navigator.of(context).canPop()) {
@@ -332,60 +333,68 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppDimensions.space20),
-      child: Container(
-        height: 48,
-        decoration: BoxDecoration(
-          color: searchBgColor,
-          borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: AppDimensions.space16),
-            Icon(Icons.search_rounded, color: hintColor, size: 22),
-            const SizedBox(width: AppDimensions.space8),
-            Expanded(
-              child: TextField(
-                controller: _searchController,
-                onChanged: _onSearchChanged,
-                textInputAction: TextInputAction.search,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDark
-                      ? AppColors.textPrimaryDark
-                      : AppColors.textPrimaryLight,
-                ),
-                decoration: InputDecoration(
-                  hintText: AppStrings.searchHintDiscover,
-                  hintStyle: TextStyle(
-                    color: hintColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 48),
+            padding: const EdgeInsets.symmetric(vertical: AppDimensions.space4),
+            decoration: BoxDecoration(
+              color: searchBgColor,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+            ),
+            child: Row(
+              children: [
+                const SizedBox(width: AppDimensions.space16),
+                Icon(Icons.search_rounded, color: hintColor, size: 22),
+                const SizedBox(width: AppDimensions.space8),
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    textInputAction: TextInputAction.search,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark
+                          ? AppColors.textPrimaryDark
+                          : AppColors.textPrimaryLight,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: AppStrings.searchHintDiscover,
+                      hintStyle: TextStyle(
+                        color: hintColor,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero,
                 ),
-              ),
+                if (_searchController.text.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.close_rounded, size: 18),
+                    color: hintColor,
+                    splashRadius: 18,
+                    tooltip: AppStrings.clear,
+                    onPressed: _clearSearch,
+                  ),
+                IconButton(
+                  key: const ValueKey('search_filter_button'),
+                  icon: const Icon(Icons.tune_rounded, size: 20),
+                  color: iconColor,
+                  splashRadius: 20,
+                  padding: const EdgeInsets.only(right: AppDimensions.space12),
+                  tooltip: AppStrings.filter,
+                  onPressed: () => _showContentTypeFilterSheet(context, isDark),
+                ),
+              ],
             ),
-            if (_searchController.text.isNotEmpty)
-              IconButton(
-                icon: const Icon(Icons.close_rounded, size: 18),
-                color: hintColor,
-                splashRadius: 18,
-                onPressed: _clearSearch,
-              ),
-            IconButton(
-              key: const ValueKey('search_filter_button'),
-              icon: const Icon(Icons.tune_rounded, size: 20),
-              color: iconColor,
-              splashRadius: 20,
-              padding: const EdgeInsets.only(right: AppDimensions.space12),
-              tooltip: AppStrings.filter,
-              onPressed: () => _showContentTypeFilterSheet(context, isDark),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -409,81 +418,89 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: sheetBg,
+      constraints: const BoxConstraints(maxWidth: 500),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(AppDimensions.radiusXl),
         ),
       ),
       builder: (sheetContext) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppDimensions.space20,
-              AppDimensions.space12,
-              AppDimensions.space20,
-              AppDimensions.space20,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Drag handle
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: handleColor,
-                      borderRadius: BorderRadius.circular(
-                        AppDimensions.radiusFull,
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppDimensions.space20,
+                    AppDimensions.space12,
+                    AppDimensions.space20,
+                    AppDimensions.space20,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Drag handle
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: handleColor,
+                            borderRadius: BorderRadius.circular(
+                              AppDimensions.radiusFull,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: AppDimensions.space16),
+                      // Title
+                      Text(
+                        AppStrings.exploreContent,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: primaryTextColor,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: AppDimensions.space16),
+                      // Articles option
+                      _buildContentTypeOption(
+                        context: sheetContext,
+                        key: const ValueKey('filter_option_articles'),
+                        title: AppStrings.articles,
+                        icon: Icons.article_outlined,
+                        isSelected: _contentType == _ContentType.articles,
+                        activeColor: activeColor,
+                        primaryTextColor: primaryTextColor,
+                        secondaryTextColor: secondaryTextColor,
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          _onContentTypeChanged(_ContentType.articles);
+                        },
+                      ),
+                      const SizedBox(height: AppDimensions.space8),
+                      // Blogs option
+                      _buildContentTypeOption(
+                        context: sheetContext,
+                        key: const ValueKey('filter_option_blogs'),
+                        title: AppStrings.blogs,
+                        icon: Icons.rss_feed_rounded,
+                        isSelected: _contentType == _ContentType.blogs,
+                        activeColor: activeColor,
+                        primaryTextColor: primaryTextColor,
+                        secondaryTextColor: secondaryTextColor,
+                        onTap: () {
+                          Navigator.of(sheetContext).pop();
+                          _onContentTypeChanged(_ContentType.blogs);
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: AppDimensions.space16),
-                // Title
-                Text(
-                  AppStrings.exploreContent,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: primaryTextColor,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.space16),
-                // Articles option
-                _buildContentTypeOption(
-                  context: sheetContext,
-                  key: const ValueKey('filter_option_articles'),
-                  title: AppStrings.articles,
-                  icon: Icons.article_outlined,
-                  isSelected: _contentType == _ContentType.articles,
-                  activeColor: activeColor,
-                  primaryTextColor: primaryTextColor,
-                  secondaryTextColor: secondaryTextColor,
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    _onContentTypeChanged(_ContentType.articles);
-                  },
-                ),
-                const SizedBox(height: AppDimensions.space8),
-                // Blogs option
-                _buildContentTypeOption(
-                  context: sheetContext,
-                  key: const ValueKey('filter_option_blogs'),
-                  title: AppStrings.blogs,
-                  icon: Icons.rss_feed_rounded,
-                  isSelected: _contentType == _ContentType.blogs,
-                  activeColor: activeColor,
-                  primaryTextColor: primaryTextColor,
-                  secondaryTextColor: secondaryTextColor,
-                  onTap: () {
-                    Navigator.of(sheetContext).pop();
-                    _onContentTypeChanged(_ContentType.blogs);
-                  },
-                ),
-              ],
+              ),
             ),
           ),
         );
@@ -521,10 +538,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           color: isSelected ? selectedBg : Colors.transparent,
           borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
           border: isSelected
-              ? Border.all(
-                  color: activeColor.withValues(alpha: 0.3),
-                  width: 1,
-                )
+              ? Border.all(color: activeColor.withValues(alpha: 0.3), width: 1)
               : Border.all(color: Colors.transparent, width: 1),
         ),
         child: Row(
@@ -554,8 +568,10 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   Widget _buildCategoryChips(BuildContext context, bool isDark) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final chipsHeight = (38.0 * textScale).clamp(38.0, 56.0);
     return SizedBox(
-      height: 38,
+      height: chipsHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppDimensions.space20),
@@ -575,25 +591,41 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
               ? AppColors.textSecondaryDark
               : const Color(0xFF64748B);
 
-          return GestureDetector(
-            onTap: () => _onCategorySelected(category),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppDimensions.space16,
-                vertical: AppDimensions.space8,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected ? selectedBg : unselectedBg,
+          return Semantics(
+            button: true,
+            selected: isSelected,
+            child: Material(
+              color: isSelected ? selectedBg : unselectedBg,
+              borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => _onCategorySelected(category),
                 borderRadius: BorderRadius.circular(AppDimensions.radiusFull),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                category,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                  color: isSelected ? Colors.white : unselectedText,
+                splashColor: isSelected
+                    ? Colors.white.withValues(alpha: 0.25)
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : Colors.black.withValues(alpha: 0.08)),
+                highlightColor: isSelected
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : (isDark
+                        ? Colors.white.withValues(alpha: 0.06)
+                        : Colors.black.withValues(alpha: 0.04)),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimensions.space16,
+                    vertical: AppDimensions.space8,
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    category,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight:
+                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected ? Colors.white : unselectedText,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -601,6 +633,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         },
       ),
     );
+  }
+
+  int _getColumnCount(double width) {
+    if (width < AppDimensions.tabletBreakpoint) {
+      return 1;
+    } else if (width < 900.0) {
+      return 2;
+    } else {
+      return 3;
+    }
   }
 
   Widget _buildBody(BuildContext context, bool isDark) {
@@ -643,10 +685,27 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       );
     }
 
-    // 4. Loaded Articles List
-    return RefreshIndicator(
-      onRefresh: () => viewModel.fetchArticles(refresh: true),
-      child: ListView.builder(
+    // 4. Loaded Articles Feed (Responsive: Single-Column List or Multi-Column Grid)
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = _getColumnCount(constraints.maxWidth);
+        return RefreshIndicator(
+          onRefresh: () => viewModel.fetchArticles(refresh: true),
+          child: _buildArticleFeedList(context, viewModel, columns, isDark),
+        );
+      },
+    );
+  }
+
+  Widget _buildArticleFeedList(
+    BuildContext context,
+    ArticleViewModel viewModel,
+    int columns,
+    bool isDark,
+  ) {
+    if (columns <= 1) {
+      // Single-column phone layout
+      return ListView.builder(
         key: const PageStorageKey('articles_feed_list'),
         controller: _articleScrollController,
         physics: const AlwaysScrollableScrollPhysics(),
@@ -654,14 +713,12 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           horizontal: AppDimensions.space20,
           vertical: AppDimensions.space8,
         ),
-        // Item count includes articles plus pagination footer if applicable
         itemCount:
             viewModel.articles.length +
             (viewModel.isLoadingMore || viewModel.paginationError != null
                 ? 1
                 : 0),
         itemBuilder: (context, index) {
-          // Pagination footer
           if (index == viewModel.articles.length) {
             if (viewModel.paginationError != null) {
               return _buildArticlePaginationErrorFooter(viewModel, isDark);
@@ -684,7 +741,72 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             },
           );
         },
+      );
+    }
+
+    // Multi-column tablet/desktop grid layout
+    final articles = viewModel.articles;
+    final rowCount = (articles.length / columns).ceil();
+    final hasFooter =
+        viewModel.isLoadingMore || viewModel.paginationError != null;
+    final totalCount = rowCount + (hasFooter ? 1 : 0);
+
+    return ListView.builder(
+      key: const PageStorageKey('articles_feed_list'),
+      controller: _articleScrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.space20,
+        vertical: AppDimensions.space8,
       ),
+      itemCount: totalCount,
+      itemBuilder: (context, rowIndex) {
+        // Full-width pagination footer
+        if (rowIndex == rowCount) {
+          if (viewModel.paginationError != null) {
+            return _buildArticlePaginationErrorFooter(viewModel, isDark);
+          }
+          return _buildPaginationLoadingFooter(isDark);
+        }
+
+        final startIndex = rowIndex * columns;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppDimensions.space2),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (int col = 0; col < columns; col++) ...[
+                  if (col > 0) const SizedBox(width: AppDimensions.space16),
+                  Expanded(
+                    child: (startIndex + col < articles.length)
+                        ? Builder(
+                            builder: (context) {
+                              final itemIndex = startIndex + col;
+                              final article = articles[itemIndex];
+                              return ArticleCard.fromArticle(
+                                article: article,
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => ArticleDetailScreen(
+                                        initialArticleId: article.id,
+                                        initialIndex: itemIndex,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -720,10 +842,27 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       );
     }
 
-    // 4. Loaded Blogs List
-    return RefreshIndicator(
-      onRefresh: () => viewModel.fetchBlogs(refresh: true),
-      child: ListView.builder(
+    // 4. Loaded Blogs Feed (Responsive: Single-Column List or Multi-Column Grid)
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = _getColumnCount(constraints.maxWidth);
+        return RefreshIndicator(
+          onRefresh: () => viewModel.fetchBlogs(refresh: true),
+          child: _buildBlogFeedList(context, viewModel, columns, isDark),
+        );
+      },
+    );
+  }
+
+  Widget _buildBlogFeedList(
+    BuildContext context,
+    BlogViewModel viewModel,
+    int columns,
+    bool isDark,
+  ) {
+    if (columns <= 1) {
+      // Single-column phone layout
+      return ListView.builder(
         key: const PageStorageKey('blogs_feed_list'),
         controller: _blogScrollController,
         physics: const AlwaysScrollableScrollPhysics(),
@@ -737,7 +876,6 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 ? 1
                 : 0),
         itemBuilder: (context, index) {
-          // Pagination footer
           if (index == viewModel.blogs.length) {
             if (viewModel.paginationError != null) {
               return _buildBlogPaginationErrorFooter(viewModel, isDark);
@@ -760,7 +898,71 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
             },
           );
         },
+      );
+    }
+
+    // Multi-column tablet/desktop grid layout
+    final blogs = viewModel.blogs;
+    final rowCount = (blogs.length / columns).ceil();
+    final hasFooter =
+        viewModel.isLoadingMore || viewModel.paginationError != null;
+    final totalCount = rowCount + (hasFooter ? 1 : 0);
+
+    return ListView.builder(
+      key: const PageStorageKey('blogs_feed_list'),
+      controller: _blogScrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.space20,
+        vertical: AppDimensions.space8,
       ),
+      itemCount: totalCount,
+      itemBuilder: (context, rowIndex) {
+        if (rowIndex == rowCount) {
+          if (viewModel.paginationError != null) {
+            return _buildBlogPaginationErrorFooter(viewModel, isDark);
+          }
+          return _buildPaginationLoadingFooter(isDark);
+        }
+
+        final startIndex = rowIndex * columns;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppDimensions.space2),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (int col = 0; col < columns; col++) ...[
+                  if (col > 0) const SizedBox(width: AppDimensions.space16),
+                  Expanded(
+                    child: (startIndex + col < blogs.length)
+                        ? Builder(
+                            builder: (context) {
+                              final itemIndex = startIndex + col;
+                              final blog = blogs[itemIndex];
+                              return ArticleCard.fromBlog(
+                                blog: blog,
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => BlogDetailScreen(
+                                        initialBlogId: blog.id,
+                                        initialIndex: itemIndex,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

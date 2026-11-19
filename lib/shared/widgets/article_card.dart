@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
+import '../../core/constants/app_strings.dart';
 import '../../models/article_model.dart';
 import '../../models/blog_model.dart';
 
@@ -78,7 +79,7 @@ class ArticleCard extends StatelessWidget {
   }
 
   String _formatDate(DateTime? dateTime) {
-    if (dateTime == null) return 'Date unavailable';
+    if (dateTime == null) return AppStrings.dateUnavailable;
     const months = [
       'Jan',
       'Feb',
@@ -126,150 +127,167 @@ class ArticleCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
           child: Padding(
             padding: const EdgeInsets.all(AppDimensions.space8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Left: Rounded Thumbnail
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
-                  child: SizedBox(
-                    width: 104,
-                    height: 104,
-                    child: imageUrl.isNotEmpty
-                        ? CachedNetworkImage(
-                            imageUrl: imageUrl,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: isDark
-                                  ? AppColors.shimmerBaseDark
-                                  : AppColors.shimmerBaseLight,
-                              child: const Center(
-                                child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left: Rounded Thumbnail
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppDimensions.radiusLg),
+                    child: SizedBox(
+                      width: 104,
+                      height: 104,
+                      child: imageUrl.isNotEmpty
+                          ? CachedNetworkImage(
+                              imageUrl: imageUrl,
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: isDark
+                                    ? AppColors.shimmerBaseDark
+                                    : AppColors.shimmerBaseLight,
+                                child: const Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            errorWidget: (context, url, error) => Container(
+                              errorWidget: (context, url, error) => Container(
+                                color: isDark
+                                    ? AppColors.surfaceVariantDark
+                                    : AppColors.surfaceVariantLight,
+                                child: Icon(
+                                  Icons.image_not_supported_outlined,
+                                  size: 28,
+                                  color: tertiaryTextColor,
+                                ),
+                              ),
+                            )
+                          : Container(
                               color: isDark
                                   ? AppColors.surfaceVariantDark
                                   : AppColors.surfaceVariantLight,
                               child: Icon(
-                                Icons.image_not_supported_outlined,
+                                Icons.newspaper_rounded,
                                 size: 28,
                                 color: tertiaryTextColor,
                               ),
                             ),
-                          )
-                        : Container(
-                            color: isDark
-                                ? AppColors.surfaceVariantDark
-                                : AppColors.surfaceVariantLight,
-                            child: Icon(
-                              Icons.newspaper_rounded,
-                              size: 28,
-                              color: tertiaryTextColor,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(width: AppDimensions.space12),
-
-                // Right: Content Column
-                Expanded(
-                  child: SizedBox(
-                    height: 104,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Category / Source
-                        Text(
-                          newsSite,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: tertiaryTextColor,
-                            letterSpacing: -0.2,
-                          ),
-                        ),
-
-                        // Title (bold, max 2 lines)
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: primaryTextColor,
-                            height: 1.25,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-
-                        // Metadata Row: Avatar + Author + Dot + Date
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 9,
-                              backgroundColor: isDark
-                                  ? AppColors.primary.withValues(alpha: 0.4)
-                                  : AppColors.primaryLight.withValues(
-                                      alpha: 0.2,
-                                    ),
-                              child: Text(
-                                displayName.isNotEmpty
-                                    ? displayName[0].toUpperCase()
-                                    : 'N',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark
-                                      ? Colors.white
-                                      : AppColors.primary,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: AppDimensions.space6),
-                            Flexible(
-                              child: Text(
-                                displayName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                  color: secondaryTextColor,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              ' • ',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: tertiaryTextColor,
-                              ),
-                            ),
-                            Text(
-                              _formatDate(publishedAt),
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: tertiaryTextColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(width: AppDimensions.space12),
+
+                  // Right: Content Column
+                  Expanded(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(minHeight: 104),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Category / Source
+                          Text(
+                            newsSite,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: tertiaryTextColor,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+
+                          // Title (bold, max 2 lines)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppDimensions.space4,
+                            ),
+                            child: Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: primaryTextColor,
+                                height: 1.25,
+                                letterSpacing: -0.3,
+                              ),
+                            ),
+                          ),
+
+                          // Metadata Row: Avatar + Author + Dot + Date
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: AppDimensions.space4,
+                            runSpacing: AppDimensions.space2,
+                            children: [
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 9,
+                                    backgroundColor: isDark
+                                        ? AppColors.primary.withValues(
+                                            alpha: 0.4,
+                                          )
+                                        : AppColors.primaryLight.withValues(
+                                            alpha: 0.2,
+                                          ),
+                                    child: Text(
+                                      displayName.isNotEmpty
+                                          ? displayName[0].toUpperCase()
+                                          : 'N',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark
+                                            ? Colors.white
+                                            : AppColors.primary,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppDimensions.space6),
+                                  Flexible(
+                                    child: Text(
+                                      displayName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        color: secondaryTextColor,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Text(
+                                '•',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: tertiaryTextColor,
+                                ),
+                              ),
+                              Text(
+                                _formatDate(publishedAt),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: tertiaryTextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

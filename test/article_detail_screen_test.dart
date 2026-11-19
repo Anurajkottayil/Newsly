@@ -6,6 +6,7 @@ import 'package:newsly/core/theme/app_theme.dart';
 import 'package:newsly/models/article_model.dart';
 import 'package:newsly/repositories/article_repository.dart';
 import 'package:newsly/shared/widgets/app_button.dart';
+import 'package:newsly/shared/widgets/article_card.dart';
 import 'package:newsly/viewmodels/article_view_model.dart';
 import 'package:newsly/views/screens/article_detail_screen.dart';
 import 'package:provider/provider.dart';
@@ -121,171 +122,209 @@ void main() {
     );
   }
 
-  group(
-    'ArticleDetailScreen Standalone UI Tests (Phase 4.2 Compatibility)',
-    () {
-      testWidgets('Detail screen renders article title', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(
-          createStandaloneWidget(article: sampleArticle1),
-        );
-        await tester.pump();
+  group('ArticleDetailScreen Standalone UI Tests (Phase 4.2 Compatibility)', () {
+    testWidgets('Detail screen renders article title', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createStandaloneWidget(article: sampleArticle1));
+      await tester.pump();
 
-        expect(
-          find.text('Alexander wears modified helmet in road races'),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets(
-        'Source and news site are displayed in hero and content panel',
-        (WidgetTester tester) async {
-          await tester.pumpWidget(
-            createStandaloneWidget(article: sampleArticle1),
-          );
-          await tester.pump();
-
-          expect(find.text('CNN Indonesia'), findsNWidgets(2));
-          expect(find.byIcon(Icons.verified_rounded), findsOneWidget);
-        },
+      expect(
+        find.text('Alexander wears modified helmet in road races'),
+        findsOneWidget,
       );
+    });
 
-      testWidgets('Summary content is displayed with proper typography', (
-        WidgetTester tester,
-      ) async {
+    testWidgets(
+      'Source and news site are displayed in hero and content panel without unverified badge',
+      (WidgetTester tester) async {
         await tester.pumpWidget(
           createStandaloneWidget(article: sampleArticle1),
         );
         await tester.pump();
 
-        expect(
-          find.textContaining(
-            'As a tech department, we are usually pretty good',
-          ),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('Published date and Trending metadata are displayed', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(
-          createStandaloneWidget(article: sampleArticle1),
-        );
-        await tester.pump();
-
-        expect(
-          find.text('${AppStrings.trending} • Feb 27, 2023'),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('Missing image is handled gracefully with fallback icon', (
-        WidgetTester tester,
-      ) async {
-        final articleWithoutImage = Article(
-          id: 104,
-          title: 'Article Without Image',
-          authors: const [],
-          url: 'https://example.com/no-image',
-          imageUrl: '',
-          newsSite: 'SpaceX',
-          summary: 'Rocket launch succeeded without a preview photo.',
-          publishedAt: DateTime(2023, 3, 1),
-        );
-
-        await tester.pumpWidget(
-          createStandaloneWidget(article: articleWithoutImage),
-        );
-        await tester.pump();
-
-        expect(find.byIcon(Icons.newspaper_rounded), findsOneWidget);
-        expect(find.text('Article Without Image'), findsOneWidget);
-      });
-
-      testWidgets(
-        'Missing summary or empty source are handled with fallback text',
-        (WidgetTester tester) async {
-          final articleWithEmptyFields = Article(
-            id: 105,
-            title: '',
-            authors: const [],
-            url: '',
-            imageUrl: '',
-            newsSite: '',
-            summary: '',
-            publishedAt: DateTime(2023, 4, 1),
-          );
-
-          await tester.pumpWidget(
-            createStandaloneWidget(article: articleWithEmptyFields),
-          );
-          await tester.pump();
-
-          expect(find.text(AppStrings.appName), findsOneWidget);
-          expect(
-            find.text('No summary available for this article.'),
-            findsOneWidget,
-          );
-        },
-      );
-
-      testWidgets('Read full article AppButton is displayed and accessible', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(
-          createStandaloneWidget(article: sampleArticle1),
-        );
-        await tester.pump();
-
-        expect(find.byType(AppButton), findsOneWidget);
-        expect(find.text(AppStrings.readFullArticle), findsOneWidget);
-      });
-
-      testWidgets('Floating back button invokes onBack callback', (
-        WidgetTester tester,
-      ) async {
-        bool backTapped = false;
-        await tester.pumpWidget(
-          createStandaloneWidget(
-            article: sampleArticle1,
-            onBack: () {
-              backTapped = true;
-            },
-          ),
-        );
-        await tester.pump();
-
-        final backButton = find.byIcon(Icons.arrow_back_ios_new_rounded);
-        expect(backButton, findsOneWidget);
-
-        await tester.tap(backButton);
-        await tester.pump();
-
-        expect(backTapped, isTrue);
-      });
-
-      testWidgets('Renders properly in dark theme', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(
-          createStandaloneWidget(
-            article: sampleArticle1,
-            theme: AppTheme.darkTheme,
-          ),
-        );
-        await tester.pump();
-
-        expect(
-          find.text('Alexander wears modified helmet in road races'),
-          findsOneWidget,
-        );
         expect(find.text('CNN Indonesia'), findsNWidgets(2));
-        expect(find.text(AppStrings.readFullArticle), findsOneWidget);
-      });
-    },
-  );
+        expect(find.byIcon(Icons.verified_rounded), findsNothing);
+      },
+    );
+
+    testWidgets('Summary content is displayed with proper typography', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createStandaloneWidget(article: sampleArticle1));
+      await tester.pump();
+
+      expect(
+        find.textContaining('As a tech department, we are usually pretty good'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('Published date and Trending metadata are displayed', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createStandaloneWidget(article: sampleArticle1));
+      await tester.pump();
+
+      expect(
+        find.text('${AppStrings.trending} • Feb 27, 2023'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets(
+      'Null publication date displays Date unavailable fallback on detail screen',
+      (WidgetTester tester) async {
+        final articleWithNullDate = Article(
+          id: 106,
+          title: 'Article With Null Date',
+          authors: const [Author(name: 'Author')],
+          url: 'https://example.com/null-date',
+          imageUrl: '',
+          newsSite: 'SpaceNews',
+          summary: 'Testing null date fallback on detail screen.',
+          publishedAt: null,
+        );
+
+        await tester.pumpWidget(
+          createStandaloneWidget(article: articleWithNullDate),
+        );
+        await tester.pump();
+
+        expect(
+          find.text('SpaceNews • ${AppStrings.dateUnavailable}'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'ArticleCard displays Date unavailable fallback when date is null',
+      (WidgetTester tester) async {
+        final articleWithNullDate = Article(
+          id: 107,
+          title: 'ArticleCard With Null Date',
+          authors: const [Author(name: 'Author')],
+          url: 'https://example.com/null-date-card',
+          imageUrl: '',
+          newsSite: 'NASA',
+          summary: 'Testing ArticleCard null date.',
+          publishedAt: null,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ArticleCard.fromArticle(article: articleWithNullDate),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text(AppStrings.dateUnavailable), findsOneWidget);
+      },
+    );
+
+    testWidgets('Missing image is handled gracefully with fallback icon', (
+      WidgetTester tester,
+    ) async {
+      final articleWithoutImage = Article(
+        id: 104,
+        title: 'Article Without Image',
+        authors: const [],
+        url: 'https://example.com/no-image',
+        imageUrl: '',
+        newsSite: 'SpaceX',
+        summary: 'Rocket launch succeeded without a preview photo.',
+        publishedAt: DateTime(2023, 3, 1),
+      );
+
+      await tester.pumpWidget(
+        createStandaloneWidget(article: articleWithoutImage),
+      );
+      await tester.pump();
+
+      expect(find.byIcon(Icons.newspaper_rounded), findsOneWidget);
+      expect(find.text('Article Without Image'), findsOneWidget);
+    });
+
+    testWidgets(
+      'Missing summary or empty source are handled with fallback text',
+      (WidgetTester tester) async {
+        final articleWithEmptyFields = Article(
+          id: 105,
+          title: '',
+          authors: const [],
+          url: '',
+          imageUrl: '',
+          newsSite: '',
+          summary: '',
+          publishedAt: DateTime(2023, 4, 1),
+        );
+
+        await tester.pumpWidget(
+          createStandaloneWidget(article: articleWithEmptyFields),
+        );
+        await tester.pump();
+
+        expect(find.text(AppStrings.appName), findsOneWidget);
+        expect(
+          find.text('No summary available for this article.'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('Read full article AppButton is displayed and accessible', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(createStandaloneWidget(article: sampleArticle1));
+      await tester.pump();
+
+      expect(find.byType(AppButton), findsOneWidget);
+      expect(find.text(AppStrings.readFullArticle), findsOneWidget);
+    });
+
+    testWidgets('Floating back button invokes onBack callback', (
+      WidgetTester tester,
+    ) async {
+      bool backTapped = false;
+      await tester.pumpWidget(
+        createStandaloneWidget(
+          article: sampleArticle1,
+          onBack: () {
+            backTapped = true;
+          },
+        ),
+      );
+      await tester.pump();
+
+      final backButton = find.byIcon(Icons.arrow_back_ios_new_rounded);
+      expect(backButton, findsOneWidget);
+
+      await tester.tap(backButton);
+      await tester.pump();
+
+      expect(backTapped, isTrue);
+    });
+
+    testWidgets('Renders properly in dark theme', (WidgetTester tester) async {
+      await tester.pumpWidget(
+        createStandaloneWidget(
+          article: sampleArticle1,
+          theme: AppTheme.darkTheme,
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.text('Alexander wears modified helmet in road races'),
+        findsOneWidget,
+      );
+      expect(find.text('CNN Indonesia'), findsNWidgets(2));
+      expect(find.text(AppStrings.readFullArticle), findsOneWidget);
+    });
+  });
 
   group('ArticleDetailScreen Book-Style Swipe Navigation & Pagination', () {
     testWidgets(

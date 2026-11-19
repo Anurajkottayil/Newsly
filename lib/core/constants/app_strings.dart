@@ -36,6 +36,9 @@ class AppStrings {
   static const String retryLoadingMore = 'Failed to load more. Tap to retry.';
   static const String back = 'Back';
   static const String share = 'Share';
+  static const String moreOptions = 'More options';
+  static const String more = 'More options';
+  static const String refresh = 'Refresh';
 
   // Loading Messages
   static const String loadingArticles = 'Loading latest articles...';

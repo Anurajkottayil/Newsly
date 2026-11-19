@@ -174,6 +174,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+            tooltip: AppStrings.back,
             color: isDark
                 ? AppColors.textPrimaryDark
                 : AppColors.textPrimaryLight,
@@ -274,6 +275,11 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                       size: 18,
                       color: isDark ? Colors.white : AppColors.textPrimaryLight,
                     ),
+                    tooltip: AppStrings.back,
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
                     onPressed: () {
                       if (widget.onBack != null) {
                         widget.onBack!();
@@ -288,7 +294,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
             Expanded(
               child: Center(
                 child: viewModel.paginationError != null
-                    ? Padding(
+                    ? SingleChildScrollView(
                         padding: const EdgeInsets.all(AppDimensions.space24),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -339,7 +345,8 @@ class ArticleDetailContent extends StatelessWidget {
     this.onBack,
   });
 
-  String _formatDate(DateTime dateTime) {
+  String _formatDate(DateTime? dateTime) {
+    if (dateTime == null) return AppStrings.dateUnavailable;
     const months = [
       'Jan',
       'Feb',
@@ -359,7 +366,9 @@ class ArticleDetailContent extends StatelessWidget {
   }
 
   String _formatMetadata() {
-    final dateStr = _formatDate(article.publishedAt);
+    final dateStr = article.publishedAt != null
+        ? _formatDate(article.publishedAt)
+        : AppStrings.dateUnavailable;
     if (article.featured) {
       return '${AppStrings.trending} • $dateStr';
     }
@@ -411,8 +420,22 @@ class ArticleDetailContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final heroHeight = (screenHeight * 0.44).clamp(320.0, 440.0);
+    final size = MediaQuery.sizeOf(context);
+    final screenHeight = size.height;
+    final isShortHeight = screenHeight < 500;
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+
+    final minHeroHeight = isShortHeight
+        ? (190.0 * textScale).clamp(180.0, 300.0)
+        : (320.0 * textScale).clamp(320.0, 520.0);
+    final maxHeroHeight = isShortHeight
+        ? (280.0 * textScale).clamp(240.0, 380.0)
+        : (440.0 * textScale).clamp(440.0, 600.0);
+    final targetFraction = isShortHeight ? 0.60 : 0.44;
+    final heroHeight = (screenHeight * targetFraction).clamp(
+      minHeroHeight,
+      maxHeroHeight,
+    );
 
     final panelColor = isDark ? AppColors.cardDark : Colors.white;
 
@@ -425,7 +448,13 @@ class ArticleDetailContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 1. Upper Hero Section with Floating Controls & Text Overlay
-              _buildHeroSection(context, heroHeight, isDark, panelColor),
+              _buildHeroSection(
+                context,
+                heroHeight,
+                isDark,
+                panelColor,
+                isShortHeight: isShortHeight,
+              ),
 
               // 2. Main Content Panel
               Container(
@@ -469,8 +498,9 @@ class ArticleDetailContent extends StatelessWidget {
     BuildContext context,
     double height,
     bool isDark,
-    Color panelColor,
-  ) {
+    Color panelColor, {
+    bool isShortHeight = false,
+  }) {
     final effectiveTag = heroTag ?? 'article_hero_${article.id}';
 
     return SizedBox(
@@ -530,9 +560,11 @@ class ArticleDetailContent extends StatelessWidget {
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
+                padding: EdgeInsets.symmetric(
                   horizontal: AppDimensions.space16,
-                  vertical: AppDimensions.space8,
+                  vertical: isShortHeight
+                      ? AppDimensions.space4
+                      : AppDimensions.space8,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -561,10 +593,9 @@ class ArticleDetailContent extends StatelessWidget {
                             // Visual control per reference specification
                           },
                         ),
-                        const SizedBox(width: AppDimensions.space8),
                         _buildFloatingButton(
                           icon: Icons.more_horiz_rounded,
-                          tooltip: 'More',
+                          tooltip: AppStrings.moreOptions,
                           onPressed: () {
                             // Visual control per reference specification
                           },
@@ -581,7 +612,9 @@ class ArticleDetailContent extends StatelessWidget {
           Positioned(
             left: AppDimensions.space20,
             right: AppDimensions.space20,
-            bottom: AppDimensions.space24,
+            bottom: isShortHeight
+                ? AppDimensions.space16
+                : AppDimensions.space24,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -589,17 +622,22 @@ class ArticleDetailContent extends StatelessWidget {
                 // Category Pill
                 _buildCategoryPill(
                   article.newsSite.isNotEmpty ? article.newsSite : 'News',
+                  isCompact: isShortHeight,
                 ),
 
-                const SizedBox(height: AppDimensions.space12),
+                SizedBox(
+                  height: isShortHeight
+                      ? AppDimensions.space6
+                      : AppDimensions.space12,
+                ),
 
                 // Large Bold Headline
                 Text(
                   article.title.isNotEmpty ? article.title : AppStrings.appName,
-                  maxLines: 3,
+                  maxLines: isShortHeight ? 2 : 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 22,
+                  style: TextStyle(
+                    fontSize: isShortHeight ? 18 : 22,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                     height: 1.25,
@@ -607,13 +645,17 @@ class ArticleDetailContent extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: AppDimensions.space8),
+                SizedBox(
+                  height: isShortHeight
+                      ? AppDimensions.space4
+                      : AppDimensions.space8,
+                ),
 
                 // Metadata (Trending / Source • Date)
                 Text(
                   _formatMetadata(),
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: isShortHeight ? 11 : 12,
                     fontWeight: FontWeight.w500,
                     color: Colors.white.withValues(alpha: 0.8),
                     letterSpacing: -0.2,
@@ -647,26 +689,31 @@ class ArticleDetailContent extends StatelessWidget {
     required IconData icon,
     required VoidCallback onPressed,
     String? tooltip,
+    double iconSize = 18,
   }) {
-    return Material(
-      color: Colors.black.withValues(alpha: 0.35),
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: IconButton(
-        icon: Icon(icon, color: Colors.white, size: 18),
-        tooltip: tooltip,
-        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-        padding: EdgeInsets.zero,
-        onPressed: onPressed,
+    return IconButton(
+      icon: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.35),
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Icon(icon, color: Colors.white, size: iconSize),
       ),
+      tooltip: tooltip,
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      padding: EdgeInsets.zero,
+      onPressed: onPressed,
     );
   }
 
-  Widget _buildCategoryPill(String category) {
+  Widget _buildCategoryPill(String category, {bool isCompact = false}) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.space12,
-        vertical: AppDimensions.space6,
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? AppDimensions.space8 : AppDimensions.space12,
+        vertical: isCompact ? AppDimensions.space4 : AppDimensions.space6,
       ),
       decoration: BoxDecoration(
         color: const Color(0xFF2563EB), // Reference royal blue
@@ -676,8 +723,8 @@ class ArticleDetailContent extends StatelessWidget {
         category,
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          fontSize: 12,
+        style: TextStyle(
+          fontSize: isCompact ? 11 : 12,
           fontWeight: FontWeight.w700,
           color: Colors.white,
           letterSpacing: 0.2,
@@ -722,7 +769,7 @@ class ArticleDetailContent extends StatelessWidget {
         const SizedBox(width: AppDimensions.space12),
 
         // Publisher Name
-        Flexible(
+        Expanded(
           child: Text(
             publisherName,
             maxLines: 1,
@@ -734,15 +781,6 @@ class ArticleDetailContent extends StatelessWidget {
               letterSpacing: -0.2,
             ),
           ),
-        ),
-
-        const SizedBox(width: AppDimensions.space6),
-
-        // Verified Checkmark Icon
-        const Icon(
-          Icons.verified_rounded,
-          size: 18,
-          color: Color(0xFF2563EB), // Reference blue verified check
         ),
       ],
     );
