@@ -6,6 +6,7 @@ import 'package:newsly/core/theme/app_theme.dart';
 import 'package:newsly/models/article_model.dart';
 import 'package:newsly/repositories/article_repository.dart';
 import 'package:newsly/shared/widgets/app_button.dart';
+import 'package:newsly/shared/widgets/app_empty_view.dart';
 import 'package:newsly/shared/widgets/article_card.dart';
 import 'package:newsly/viewmodels/article_view_model.dart';
 import 'package:newsly/views/screens/article_detail_screen.dart';
@@ -597,5 +598,71 @@ void main() {
       // Expect sampleArticle2 is initially presented
       expect(find.text(sampleArticle2.title), findsOneWidget);
     });
+
+    testWidgets(
+      'ArticleDetailScreen displays AppEmptyView and handles back navigation when articles list is empty',
+      (WidgetTester tester) async {
+        bool backPressed = false;
+        final mockRepo = MockDetailArticleRepository(articlesToReturn: []);
+        final viewModel = ArticleViewModel(mockRepo);
+        await viewModel.fetchArticles();
+
+        await tester.pumpWidget(
+          createPagerWidget(
+            viewModel: viewModel,
+            onBack: () {
+              backPressed = true;
+            },
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Empty view is displayed with title and subtitle
+        expect(find.byType(AppEmptyView), findsOneWidget);
+        expect(find.text(AppStrings.noArticlesTitle), findsOneWidget);
+        expect(find.text(AppStrings.noArticlesSubtitle), findsOneWidget);
+        expect(find.text(AppStrings.retry), findsOneWidget);
+
+        // Back button is present in AppBar
+        final backButton = find.byTooltip(AppStrings.back);
+        expect(backButton, findsOneWidget);
+
+        // Tapping back button calls onBack
+        await tester.tap(backButton);
+        await tester.pump();
+
+        expect(backPressed, isTrue);
+      },
+    );
+
+    testWidgets(
+      'ArticleDetailScreen empty state retry invokes fetchArticles on ViewModel',
+      (WidgetTester tester) async {
+        final mockRepo = MockDetailArticleRepository(articlesToReturn: []);
+        final viewModel = ArticleViewModel(mockRepo);
+        await viewModel.fetchArticles();
+        expect(mockRepo.callCount, 1);
+
+        await tester.pumpWidget(createPagerWidget(viewModel: viewModel));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(AppEmptyView), findsOneWidget);
+
+        // Make mock return articles on retry
+        mockRepo.articlesToReturn = [sampleArticle1];
+
+        // Tap Retry button
+        await tester.tap(find.text(AppStrings.retry));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(seconds: 1));
+
+        expect(mockRepo.callCount, 2);
+        expect(find.byType(AppEmptyView), findsNothing);
+        expect(find.text(sampleArticle1.title), findsOneWidget);
+      },
+    );
   });
 }

@@ -404,5 +404,40 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    // 7. DiscoverScreen search filter and clear controls expose accessible tooltips and touch targets
+    testWidgets(
+      '7. DiscoverScreen search filter and clear controls expose accessible tooltips and touch targets',
+      (tester) async {
+        final articleRepo = MockPolishArticleRepo([sampleArticle]);
+        final blogRepo = MockPolishBlogRepo([sampleBlog]);
+
+        await tester.pumpWidget(
+          createDiscoverApp(articleRepo: articleRepo, blogRepo: blogRepo),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Verify filter button tooltip and size
+        final filterBtn = find.byKey(const ValueKey('search_filter_button'));
+        expect(filterBtn, findsOneWidget);
+        expect(find.byTooltip(AppStrings.filter), findsOneWidget);
+        final filterSize = tester.getSize(filterBtn);
+        expect(filterSize.width, greaterThanOrEqualTo(48.0));
+        expect(filterSize.height, greaterThanOrEqualTo(48.0));
+
+        // 2. Enter search text to show clear button (advance past debounce to trigger setState)
+        await tester.enterText(find.byType(TextField), 'Test query');
+        await tester.pump(const Duration(milliseconds: 550));
+        await tester.pump();
+
+        // 3. Verify clear button tooltip and size
+        final clearBtn = find.widgetWithIcon(IconButton, Icons.close_rounded);
+        expect(clearBtn, findsOneWidget);
+        expect(find.byTooltip(AppStrings.clear), findsOneWidget);
+        final clearSize = tester.getSize(clearBtn);
+        expect(clearSize.width, greaterThanOrEqualTo(48.0));
+        expect(clearSize.height, greaterThanOrEqualTo(48.0));
+      },
+    );
   });
 }
