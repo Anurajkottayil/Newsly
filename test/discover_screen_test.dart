@@ -29,6 +29,11 @@ class MockArticleRepository implements ArticleRepository {
   String? lastSearch;
   int? lastOffset;
   Completer<PaginatedArticles>? completer;
+  Completer<PaginatedArticles>? paginationCompleter;
+  bool shouldThrowOnPagination = false;
+  List<Article>? paginationArticlesToReturn;
+  String paginationErrorMessage = 'Pagination network failure';
+  bool emptyForSearch = false;
 
   MockArticleRepository({
     this.articlesToReturn = const [],
@@ -48,12 +53,40 @@ class MockArticleRepository implements ArticleRepository {
     lastOffset = offset;
     lastSearch = search;
 
+    if (offset > 0) {
+      if (paginationCompleter != null) {
+        return paginationCompleter!.future;
+      }
+      if (shouldThrowOnPagination) {
+        throw ApiException(
+          message: paginationErrorMessage,
+          type: ApiExceptionType.network,
+        );
+      }
+      final items = paginationArticlesToReturn ?? articlesToReturn;
+      return PaginatedArticles(
+        count: articlesToReturn.length + items.length,
+        next: null,
+        previous: null,
+        results: items,
+      );
+    }
+
     if (completer != null) {
       return completer!.future;
     }
 
     if (shouldThrow) {
       throw ApiException(message: errorMessage, type: ApiExceptionType.network);
+    }
+
+    if (emptyForSearch && search != null && search.isNotEmpty) {
+      return const PaginatedArticles(
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+      );
     }
 
     return PaginatedArticles(
@@ -79,12 +112,19 @@ class MockBlogRepository implements BlogRepository {
   int callCount = 0;
   String? lastSearch;
   int? lastOffset;
+  Completer<PaginatedBlogs>? completer;
+  Completer<PaginatedBlogs>? paginationCompleter;
+  bool shouldThrowOnPagination = false;
+  List<Blog>? paginationBlogsToReturn;
+  String paginationErrorMessage = 'Pagination network failure';
+  bool emptyForSearch = false;
 
   MockBlogRepository({
     this.blogsToReturn = const [],
     this.nextUrl,
     this.shouldThrow = false,
     this.errorMessage = 'Network error',
+    this.completer,
   });
 
   @override
@@ -97,8 +137,40 @@ class MockBlogRepository implements BlogRepository {
     lastOffset = offset;
     lastSearch = search;
 
+    if (offset > 0) {
+      if (paginationCompleter != null) {
+        return paginationCompleter!.future;
+      }
+      if (shouldThrowOnPagination) {
+        throw ApiException(
+          message: paginationErrorMessage,
+          type: ApiExceptionType.network,
+        );
+      }
+      final items = paginationBlogsToReturn ?? blogsToReturn;
+      return PaginatedBlogs(
+        count: blogsToReturn.length + items.length,
+        next: null,
+        previous: null,
+        results: items,
+      );
+    }
+
+    if (completer != null) {
+      return completer!.future;
+    }
+
     if (shouldThrow) {
       throw ApiException(message: errorMessage, type: ApiExceptionType.network);
+    }
+
+    if (emptyForSearch && search != null && search.isNotEmpty) {
+      return const PaginatedBlogs(
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+      );
     }
 
     return PaginatedBlogs(
@@ -253,6 +325,8 @@ void main() {
 
       expect(find.byType(AppErrorView), findsOneWidget);
       expect(find.text('Connection timed out'), findsOneWidget);
+      expect(find.text(AppStrings.retry), findsOneWidget);
+      expect(mockRepo.callCount, 1);
 
       // Now fix repo and tap retry
       mockRepo.shouldThrow = false;
@@ -262,6 +336,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
+      expect(mockRepo.callCount, 2);
+      expect(find.byType(AppErrorView), findsNothing);
       expect(find.byType(ArticleCard), findsNWidgets(2));
     });
 
@@ -508,9 +584,13 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
         await tester.pumpAndSettle();
 
-        // Verify blog is fetched and displayed
+        // Verify blog is fetched and displayed with metadata & placeholder
         expect(mockBlogRepo.callCount, 1);
         expect(find.text('Sample Spaceflight Blog Post'), findsOneWidget);
+        expect(find.text('NASA Blog'), findsOneWidget);
+        expect(find.text('Blogger'), findsOneWidget);
+        expect(find.text('Mar 1, 2023'), findsOneWidget);
+        expect(find.byIcon(Icons.newspaper_rounded), findsOneWidget);
 
         // Open filter bottom sheet again to switch back to Articles
         await tester.tap(find.byKey(const ValueKey('search_filter_button')));
@@ -699,6 +779,526 @@ void main() {
         expect(find.byType(AppErrorView), findsNothing);
         expect(find.text('Network error during blog refresh'), findsOneWidget);
         expect(find.byType(SnackBar), findsOneWidget);
+      },
+    );
+
+    testWidgets('Displays AppLoader when initial Blog request is in-flight', (
+      WidgetTester tester,
+    ) async {
+      final blogCompleter = Completer<PaginatedBlogs>();
+      final mockBlogRepo = MockBlogRepository(completer: blogCompleter);
+      final mockArticleRepo = MockArticleRepository(
+        articlesToReturn: sampleArticles,
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          repository: mockArticleRepo,
+          blogRepository: mockBlogRepo,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Switch to Blogs via filter sheet
+      await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+      await tester.pump(); // Render initial loading frame
+
+      expect(find.byType(AppLoader), findsOneWidget);
+      expect(find.text(AppStrings.loadingBlogs), findsOneWidget);
+
+      // Complete to avoid pending timer/future leaks
+      blogCompleter.complete(
+        const PaginatedBlogs(count: 0, next: null, previous: null, results: []),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    });
+
+    testWidgets('Displays AppEmptyView when Blog feed is empty', (
+      WidgetTester tester,
+    ) async {
+      final mockBlogRepo = MockBlogRepository(blogsToReturn: []);
+      final mockArticleRepo = MockArticleRepository(
+        articlesToReturn: sampleArticles,
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          repository: mockArticleRepo,
+          blogRepository: mockBlogRepo,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Switch to Blogs via filter sheet
+      await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppEmptyView), findsOneWidget);
+      expect(find.text(AppStrings.noBlogsTitle), findsOneWidget);
+      expect(find.text(AppStrings.noBlogsSubtitle), findsOneWidget);
+    });
+
+    testWidgets(
+      'Displays AppErrorView on Blog feed failure and retries on failure',
+      (WidgetTester tester) async {
+        final sampleBlogs = [
+          Blog(
+            id: 201,
+            title: 'Sample Spaceflight Blog Post',
+            authors: const [Author(name: 'Blogger')],
+            url: 'https://example.com/blog/201',
+            imageUrl: '',
+            newsSite: 'NASA Blog',
+            summary: 'Summary of blog post.',
+            publishedAt: DateTime(2023, 3, 1),
+            featured: true,
+          ),
+        ];
+
+        final mockBlogRepo = MockBlogRepository(
+          shouldThrow: true,
+          errorMessage: 'Failed to load blogs',
+        );
+        final mockArticleRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            repository: mockArticleRepo,
+            blogRepository: mockBlogRepo,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Switch to Blogs via filter sheet
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppErrorView), findsOneWidget);
+        expect(find.text('Failed to load blogs'), findsOneWidget);
+        expect(find.text(AppStrings.retry), findsOneWidget);
+        expect(mockBlogRepo.callCount, 1);
+
+        // Fix repo and tap retry
+        mockBlogRepo.shouldThrow = false;
+        mockBlogRepo.blogsToReturn = sampleBlogs;
+
+        await tester.tap(find.text(AppStrings.retry));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(mockBlogRepo.callCount, 2);
+        expect(find.byType(AppErrorView), findsNothing);
+        expect(find.text('Sample Spaceflight Blog Post'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Article feed displays pagination loading indicator and error tile with functional retry',
+      (WidgetTester tester) async {
+        final sixArticles = List.generate(
+          6,
+          (i) => Article(
+            id: i + 1,
+            title: 'Article Headline $i',
+            authors: const [Author(name: 'Author')],
+            url: 'https://example.com/$i',
+            imageUrl: '',
+            newsSite: 'Source',
+            summary: 'Summary $i',
+            publishedAt: DateTime(2023, 2, 27),
+          ),
+        );
+        final article7 = Article(
+          id: 7,
+          title: 'Article Headline 7',
+          authors: const [Author(name: 'Author')],
+          url: 'https://example.com/7',
+          imageUrl: '',
+          newsSite: 'Source',
+          summary: 'Summary 7',
+          publishedAt: DateTime(2023, 2, 27),
+        );
+
+        final paginationCompleter = Completer<PaginatedArticles>();
+        final mockRepo = MockArticleRepository(
+          articlesToReturn: sixArticles,
+          nextUrl:
+              'https://api.spaceflightnewsapi.net/v4/articles/?limit=10&offset=6',
+        );
+        mockRepo.paginationCompleter = paginationCompleter;
+
+        await tester.pumpWidget(createTestWidget(repository: mockRepo));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Scroll to trigger pagination
+        await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+        await tester.pump();
+
+        // 1. Pagination loading indicator visible in footer
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // 2. Complete pagination with error
+        paginationCompleter.completeError(
+          ApiException(
+            message: 'Article pagination error',
+            type: ApiExceptionType.network,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Error message and retry button in pagination tile
+        expect(find.text('Article pagination error'), findsOneWidget);
+        expect(
+          find.widgetWithText(TextButton, AppStrings.retry),
+          findsOneWidget,
+        );
+
+        // 3. Ensure retry button is visible, tap retry, and verify successful recovery
+        await tester.ensureVisible(
+          find.widgetWithText(TextButton, AppStrings.retry),
+        );
+        await tester.pumpAndSettle();
+
+        mockRepo.paginationCompleter = null;
+        mockRepo.shouldThrowOnPagination = false;
+        mockRepo.paginationArticlesToReturn = [article7];
+
+        await tester.tap(find.widgetWithText(TextButton, AppStrings.retry));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.scrollUntilVisible(
+          find.text('Article Headline 7'),
+          100,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Article Headline 7'), findsOneWidget);
+        expect(find.text('Article pagination error'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Blog feed displays pagination loading indicator and error tile with functional retry',
+      (WidgetTester tester) async {
+        final sixBlogs = List.generate(
+          6,
+          (i) => Blog(
+            id: 200 + i,
+            title: 'Blog Headline $i',
+            authors: const [Author(name: 'Author')],
+            url: 'https://example.com/blog/$i',
+            imageUrl: '',
+            newsSite: 'Source',
+            summary: 'Summary $i',
+            publishedAt: DateTime(2023, 2, 27),
+          ),
+        );
+        final blog7 = Blog(
+          id: 207,
+          title: 'Blog Headline 7',
+          authors: const [Author(name: 'Author')],
+          url: 'https://example.com/blog/207',
+          imageUrl: '',
+          newsSite: 'Source',
+          summary: 'Summary 7',
+          publishedAt: DateTime(2023, 2, 27),
+        );
+
+        final paginationCompleter = Completer<PaginatedBlogs>();
+        final mockBlogRepo = MockBlogRepository(
+          blogsToReturn: sixBlogs,
+          nextUrl:
+              'https://api.spaceflightnewsapi.net/v4/blogs/?limit=10&offset=6',
+        );
+        mockBlogRepo.paginationCompleter = paginationCompleter;
+        final mockArticleRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            repository: mockArticleRepo,
+            blogRepository: mockBlogRepo,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Switch to Blogs via filter sheet
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+        await tester.pumpAndSettle();
+
+        // Scroll to trigger pagination
+        await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+        await tester.pump();
+
+        // 1. Pagination loading indicator visible in footer
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // 2. Complete pagination with error
+        paginationCompleter.completeError(
+          ApiException(
+            message: 'Blog pagination error',
+            type: ApiExceptionType.network,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Error message and retry button in pagination tile
+        expect(find.text('Blog pagination error'), findsOneWidget);
+        expect(
+          find.widgetWithText(TextButton, AppStrings.retry),
+          findsOneWidget,
+        );
+
+        // 3. Ensure retry button is visible, tap retry, and verify recovery
+        await tester.ensureVisible(
+          find.widgetWithText(TextButton, AppStrings.retry),
+        );
+        await tester.pumpAndSettle();
+
+        mockBlogRepo.paginationCompleter = null;
+        mockBlogRepo.shouldThrowOnPagination = false;
+        mockBlogRepo.paginationBlogsToReturn = [blog7];
+
+        await tester.tap(find.widgetWithText(TextButton, AppStrings.retry));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        await tester.scrollUntilVisible(
+          find.text('Blog Headline 7'),
+          100,
+          scrollable: find.byType(Scrollable).last,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Blog Headline 7'), findsOneWidget);
+        expect(find.text('Blog pagination error'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'Searching articles with no results displays empty search view and retry action clears query',
+      (WidgetTester tester) async {
+        final mockRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+        mockRepo.emptyForSearch = true;
+
+        await tester.pumpWidget(createTestWidget(repository: mockRepo));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(ArticleCard), findsNWidgets(2));
+
+        // Enter non-matching search query
+        await tester.enterText(find.byType(TextField), 'NonExistentArticle');
+        await tester.pump(const Duration(milliseconds: 550));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(AppEmptyView), findsOneWidget);
+        expect(find.text(AppStrings.noSearchResultsTitle), findsOneWidget);
+        expect(find.text(AppStrings.noSearchResultsSubtitle), findsOneWidget);
+        expect(find.text(AppStrings.retry), findsOneWidget);
+
+        // Tapping retry clears query and restores default feed
+        mockRepo.emptyForSearch = false;
+        await tester.tap(find.text(AppStrings.retry));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(ArticleCard), findsNWidgets(2));
+        expect(mockRepo.lastSearch, isNull);
+      },
+    );
+
+    testWidgets(
+      'Searching blogs with no results displays empty search view and retry action clears query',
+      (WidgetTester tester) async {
+        final sampleBlogs = [
+          Blog(
+            id: 201,
+            title: 'Sample Spaceflight Blog Post',
+            authors: const [Author(name: 'Blogger')],
+            url: 'https://example.com/blog/201',
+            imageUrl: '',
+            newsSite: 'NASA Blog',
+            summary: 'Summary of blog post.',
+            publishedAt: DateTime(2023, 3, 1),
+            featured: true,
+          ),
+        ];
+
+        final mockArticleRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+        final mockBlogRepo = MockBlogRepository(blogsToReturn: sampleBlogs);
+        mockBlogRepo.emptyForSearch = true;
+
+        await tester.pumpWidget(
+          createTestWidget(
+            repository: mockArticleRepo,
+            blogRepository: mockBlogRepo,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Switch to Blogs tab
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Sample Spaceflight Blog Post'), findsOneWidget);
+
+        // Search for non-matching blog query
+        await tester.enterText(find.byType(TextField), 'NonExistentBlog');
+        await tester.pump(const Duration(milliseconds: 550));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byType(AppEmptyView), findsOneWidget);
+        expect(find.text(AppStrings.noSearchResultsTitle), findsOneWidget);
+        expect(find.text(AppStrings.noSearchResultsSubtitle), findsOneWidget);
+        expect(find.text(AppStrings.retry), findsOneWidget);
+
+        // Tapping retry clears query and restores default feed
+        mockBlogRepo.emptyForSearch = false;
+        await tester.tap(find.text(AppStrings.retry));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.text('Sample Spaceflight Blog Post'), findsOneWidget);
+        expect(mockBlogRepo.lastSearch, isNull);
+      },
+    );
+
+    testWidgets('Blog feed search input debounces and dispatches query', (
+      WidgetTester tester,
+    ) async {
+      final sampleBlogs = [
+        Blog(
+          id: 201,
+          title: 'Sample Spaceflight Blog Post',
+          authors: const [Author(name: 'Blogger')],
+          url: 'https://example.com/blog/201',
+          imageUrl: '',
+          newsSite: 'NASA Blog',
+          summary: 'Summary of blog post.',
+          publishedAt: DateTime(2023, 3, 1),
+          featured: true,
+        ),
+      ];
+
+      final mockArticleRepo = MockArticleRepository(
+        articlesToReturn: sampleArticles,
+      );
+      final mockBlogRepo = MockBlogRepository(blogsToReturn: sampleBlogs);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          repository: mockArticleRepo,
+          blogRepository: mockBlogRepo,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Switch to Blogs
+      await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+      await tester.pumpAndSettle();
+
+      expect(mockBlogRepo.callCount, 1);
+
+      // Enter search query
+      await tester.enterText(find.byType(TextField), 'Starship');
+      await tester.pump(const Duration(milliseconds: 200));
+
+      // Before debounce duration: repository has NOT been called again
+      expect(mockBlogRepo.callCount, 1);
+
+      // Advance past debounce duration (500ms)
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(mockBlogRepo.callCount, 2);
+      expect(mockBlogRepo.lastSearch, 'Starship');
+    });
+
+    testWidgets(
+      'Scrolling Blog feed near bottom triggers pagination loadMore',
+      (WidgetTester tester) async {
+        final tenBlogs = List.generate(
+          10,
+          (i) => Blog(
+            id: 200 + i,
+            title: 'Blog Headline $i',
+            authors: const [Author(name: 'Author')],
+            url: 'https://example.com/blog/$i',
+            imageUrl: '',
+            newsSite: 'Source',
+            summary: 'Summary $i',
+            publishedAt: DateTime(2023, 2, 27),
+          ),
+        );
+
+        final mockArticleRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+        final mockBlogRepo = MockBlogRepository(
+          blogsToReturn: tenBlogs,
+          nextUrl:
+              'https://api.spaceflightnewsapi.net/v4/blogs/?limit=10&offset=10',
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            repository: mockArticleRepo,
+            blogRepository: mockBlogRepo,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Switch to Blogs
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+        await tester.pumpAndSettle();
+
+        expect(mockBlogRepo.callCount, 1);
+
+        // Scroll down list to trigger pagination listener
+        await tester.drag(find.byType(ListView).last, const Offset(0, -1000));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(mockBlogRepo.callCount, 2);
+        expect(mockBlogRepo.lastOffset, 10);
       },
     );
   });
