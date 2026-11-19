@@ -589,5 +589,117 @@ void main() {
         expect(find.text('Sample Spaceflight Blog Post'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'Pull-to-refresh failure on articles feed preserves visible feed and displays non-blocking SnackBar',
+      (WidgetTester tester) async {
+        final mockArticleRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+
+        await tester.pumpWidget(createTestWidget(repository: mockArticleRepo));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Initial articles are loaded and displayed
+        expect(
+          find.text('What Training Do Volleyball Players Need?'),
+          findsOneWidget,
+        );
+        expect(find.byType(AppErrorView), findsNothing);
+
+        // Configure repository to throw on subsequent refresh
+        mockArticleRepo.shouldThrow = true;
+        mockArticleRepo.errorMessage = 'Network error during pull-to-refresh';
+
+        // Trigger pull-to-refresh
+        await tester.fling(
+          find.byType(RefreshIndicator),
+          const Offset(0.0, 300.0),
+          1000.0,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        // 1. Existing feed items must remain visible (not replaced by AppErrorView)
+        expect(
+          find.text('What Training Do Volleyball Players Need?'),
+          findsOneWidget,
+        );
+        expect(find.byType(AppErrorView), findsNothing);
+
+        // 2. Non-blocking floating SnackBar is displayed with error message
+        expect(
+          find.text('Network error during pull-to-refresh'),
+          findsOneWidget,
+        );
+        expect(find.byType(SnackBar), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Pull-to-refresh failure on blogs feed preserves visible feed and displays non-blocking SnackBar',
+      (WidgetTester tester) async {
+        final sampleBlogs = [
+          Blog(
+            id: 201,
+            title: 'Sample Spaceflight Blog Post',
+            authors: const [Author(name: 'Blogger')],
+            url: 'https://example.com/blog/201',
+            imageUrl: '',
+            newsSite: 'NASA Blog',
+            summary: 'Summary of blog post.',
+            publishedAt: DateTime(2023, 3, 1),
+            featured: true,
+          ),
+        ];
+
+        final mockArticleRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+        final mockBlogRepo = MockBlogRepository(blogsToReturn: sampleBlogs);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            repository: mockArticleRepo,
+            blogRepository: mockBlogRepo,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // Switch to Blogs tab
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Sample Spaceflight Blog Post'), findsOneWidget);
+        expect(find.byType(AppErrorView), findsNothing);
+
+        // Configure blog repo to throw on subsequent refresh
+        mockBlogRepo.shouldThrow = true;
+        mockBlogRepo.errorMessage = 'Network error during blog refresh';
+
+        // Trigger pull-to-refresh
+        await tester.fling(
+          find.byType(RefreshIndicator),
+          const Offset(0.0, 300.0),
+          1000.0,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pumpAndSettle();
+
+        // Feed is preserved, no full-page error, SnackBar displayed
+        expect(find.text('Sample Spaceflight Blog Post'), findsOneWidget);
+        expect(find.byType(AppErrorView), findsNothing);
+        expect(find.text('Network error during blog refresh'), findsOneWidget);
+        expect(find.byType(SnackBar), findsOneWidget);
+      },
+    );
   });
 }

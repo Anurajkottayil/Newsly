@@ -417,87 +417,95 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
     showModalBottomSheet<void>(
       context: context,
-      backgroundColor: sheetBg,
-      constraints: const BoxConstraints(maxWidth: 500),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppDimensions.radiusXl),
-        ),
-      ),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       builder: (sheetContext) {
-        return Center(
+        return Align(
+          alignment: Alignment.bottomCenter,
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 500),
-            child: SafeArea(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    AppDimensions.space20,
-                    AppDimensions.space12,
-                    AppDimensions.space20,
-                    AppDimensions.space20,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Drag handle
-                      Center(
-                        child: Container(
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: handleColor,
-                            borderRadius: BorderRadius.circular(
-                              AppDimensions.radiusFull,
+            child: Material(
+              key: const ValueKey('filter_sheet_content'),
+              color: sheetBg,
+              elevation: 4,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(AppDimensions.radiusXl),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppDimensions.space20,
+                      AppDimensions.space12,
+                      AppDimensions.space20,
+                      AppDimensions.space20,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Drag handle
+                        Center(
+                          child: Container(
+                            width: 36,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: handleColor,
+                              borderRadius: BorderRadius.circular(
+                                AppDimensions.radiusFull,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: AppDimensions.space16),
-                      // Title
-                      Text(
-                        AppStrings.exploreContent,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: primaryTextColor,
-                          letterSpacing: -0.3,
+                        const SizedBox(height: AppDimensions.space16),
+                        // Title
+                        Text(
+                          AppStrings.exploreContent,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: primaryTextColor,
+                            letterSpacing: -0.3,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppDimensions.space16),
-                      // Articles option
-                      _buildContentTypeOption(
-                        context: sheetContext,
-                        key: const ValueKey('filter_option_articles'),
-                        title: AppStrings.articles,
-                        icon: Icons.article_outlined,
-                        isSelected: _contentType == _ContentType.articles,
-                        activeColor: activeColor,
-                        primaryTextColor: primaryTextColor,
-                        secondaryTextColor: secondaryTextColor,
-                        onTap: () {
-                          Navigator.of(sheetContext).pop();
-                          _onContentTypeChanged(_ContentType.articles);
-                        },
-                      ),
-                      const SizedBox(height: AppDimensions.space8),
-                      // Blogs option
-                      _buildContentTypeOption(
-                        context: sheetContext,
-                        key: const ValueKey('filter_option_blogs'),
-                        title: AppStrings.blogs,
-                        icon: Icons.rss_feed_rounded,
-                        isSelected: _contentType == _ContentType.blogs,
-                        activeColor: activeColor,
-                        primaryTextColor: primaryTextColor,
-                        secondaryTextColor: secondaryTextColor,
-                        onTap: () {
-                          Navigator.of(sheetContext).pop();
-                          _onContentTypeChanged(_ContentType.blogs);
-                        },
-                      ),
-                    ],
+                        const SizedBox(height: AppDimensions.space16),
+                        // Articles option
+                        _buildContentTypeOption(
+                          context: sheetContext,
+                          key: const ValueKey('filter_option_articles'),
+                          title: AppStrings.articles,
+                          icon: Icons.article_outlined,
+                          isSelected: _contentType == _ContentType.articles,
+                          activeColor: activeColor,
+                          primaryTextColor: primaryTextColor,
+                          secondaryTextColor: secondaryTextColor,
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            _onContentTypeChanged(_ContentType.articles);
+                          },
+                        ),
+                        const SizedBox(height: AppDimensions.space8),
+                        // Blogs option
+                        _buildContentTypeOption(
+                          context: sheetContext,
+                          key: const ValueKey('filter_option_blogs'),
+                          title: AppStrings.blogs,
+                          icon: Icons.rss_feed_rounded,
+                          isSelected: _contentType == _ContentType.blogs,
+                          activeColor: activeColor,
+                          primaryTextColor: primaryTextColor,
+                          secondaryTextColor: secondaryTextColor,
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            _onContentTypeChanged(_ContentType.blogs);
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -604,13 +612,13 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                 splashColor: isSelected
                     ? Colors.white.withValues(alpha: 0.25)
                     : (isDark
-                        ? Colors.white.withValues(alpha: 0.12)
-                        : Colors.black.withValues(alpha: 0.08)),
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : Colors.black.withValues(alpha: 0.08)),
                 highlightColor: isSelected
                     ? Colors.white.withValues(alpha: 0.15)
                     : (isDark
-                        ? Colors.white.withValues(alpha: 0.06)
-                        : Colors.black.withValues(alpha: 0.04)),
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.black.withValues(alpha: 0.04)),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: AppDimensions.space16,
@@ -621,8 +629,9 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                     category,
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight:
-                          isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       color: isSelected ? Colors.white : unselectedText,
                     ),
                   ),
@@ -690,7 +699,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       builder: (context, constraints) {
         final columns = _getColumnCount(constraints.maxWidth);
         return RefreshIndicator(
-          onRefresh: () => viewModel.fetchArticles(refresh: true),
+          onRefresh: () => _onRefreshArticles(viewModel),
           child: _buildArticleFeedList(context, viewModel, columns, isDark),
         );
       },
@@ -847,10 +856,36 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       builder: (context, constraints) {
         final columns = _getColumnCount(constraints.maxWidth);
         return RefreshIndicator(
-          onRefresh: () => viewModel.fetchBlogs(refresh: true),
+          onRefresh: () => _onRefreshBlogs(viewModel),
           child: _buildBlogFeedList(context, viewModel, columns, isDark),
         );
       },
+    );
+  }
+
+  Future<void> _onRefreshArticles(ArticleViewModel viewModel) async {
+    await viewModel.fetchArticles(refresh: true);
+    if (!mounted) return;
+    if (viewModel.errorMessage != null && viewModel.articles.isNotEmpty) {
+      _showSnackBar(context, viewModel.errorMessage!);
+    }
+  }
+
+  Future<void> _onRefreshBlogs(BlogViewModel viewModel) async {
+    await viewModel.fetchBlogs(refresh: true);
+    if (!mounted) return;
+    if (viewModel.errorMessage != null && viewModel.blogs.isNotEmpty) {
+      _showSnackBar(context, viewModel.errorMessage!);
+    }
+  }
+
+  void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
   }
 
