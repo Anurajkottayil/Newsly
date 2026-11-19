@@ -355,6 +355,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+        tooltip: AppStrings.back,
         color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
         onPressed: () {
           if (widget.onBack != null) {
@@ -396,6 +397,11 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
                       size: 18,
                       color: isDark ? Colors.white : AppColors.textPrimaryLight,
                     ),
+                    tooltip: AppStrings.back,
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
                     onPressed: () {
                       if (widget.onBack != null) {
                         widget.onBack!();
@@ -410,7 +416,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
             Expanded(
               child: Center(
                 child: viewModel.paginationError != null
-                    ? Padding(
+                    ? SingleChildScrollView(
                         padding: const EdgeInsets.all(AppDimensions.space24),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
@@ -537,8 +543,23 @@ class BlogDetailContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final screenHeight = MediaQuery.sizeOf(context).height;
-    final heroHeight = (screenHeight * 0.44).clamp(320.0, 440.0);
+    final size = MediaQuery.sizeOf(context);
+    final screenHeight = size.height;
+    final isShortHeight = screenHeight < 500;
+    final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+
+    final minHeroHeight = isShortHeight
+        ? (190.0 * textScale).clamp(180.0, 300.0)
+        : (320.0 * textScale).clamp(320.0, 520.0);
+    final maxHeroHeight = isShortHeight
+        ? (280.0 * textScale).clamp(240.0, 380.0)
+        : (440.0 * textScale).clamp(440.0, 600.0);
+    final targetFraction = isShortHeight ? 0.60 : 0.44;
+    final heroHeight = (screenHeight * targetFraction).clamp(
+      minHeroHeight,
+      maxHeroHeight,
+    );
+
     final panelColor = isDark ? AppColors.cardDark : Colors.white;
 
     return Scaffold(
@@ -550,7 +571,13 @@ class BlogDetailContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // 1. Upper Hero Section
-              _buildHeroSection(context, heroHeight, isDark, panelColor),
+              _buildHeroSection(
+                context,
+                heroHeight,
+                isDark,
+                panelColor,
+                isShortHeight: isShortHeight,
+              ),
 
               // 2. Main Content Panel
               Container(
@@ -594,8 +621,9 @@ class BlogDetailContent extends StatelessWidget {
     BuildContext context,
     double height,
     bool isDark,
-    Color panelColor,
-  ) {
+    Color panelColor, {
+    bool isShortHeight = false,
+  }) {
     final effectiveTag = heroTag ?? 'blog_hero_${blog.id}';
 
     return SizedBox(
@@ -653,10 +681,13 @@ class BlogDetailContent extends StatelessWidget {
             left: 0,
             right: 0,
             child: SafeArea(
+              bottom: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
+                padding: EdgeInsets.symmetric(
                   horizontal: AppDimensions.space16,
-                  vertical: AppDimensions.space8,
+                  vertical: isShortHeight
+                      ? AppDimensions.space4
+                      : AppDimensions.space8,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -674,15 +705,15 @@ class BlogDetailContent extends StatelessWidget {
                       },
                     ),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         if (onRefresh != null)
                           _buildCircleIconButton(
                             icon: Icons.refresh_rounded,
-                            tooltip: 'Refresh',
+                            tooltip: AppStrings.refresh,
                             iconSize: 20,
                             onPressed: onRefresh!,
                           ),
-                        const SizedBox(width: AppDimensions.space10),
                         _buildCircleIconButton(
                           icon: Icons.bookmark_border_rounded,
                           tooltip: AppStrings.bookmarks,
@@ -691,10 +722,9 @@ class BlogDetailContent extends StatelessWidget {
                             _showSnackBar(context, 'Bookmark saved');
                           },
                         ),
-                        const SizedBox(width: AppDimensions.space10),
                         _buildCircleIconButton(
                           icon: Icons.more_horiz_rounded,
-                          tooltip: 'More options',
+                          tooltip: AppStrings.moreOptions,
                           iconSize: 20,
                           onPressed: () {
                             _showSnackBar(context, 'Sharing: ${blog.title}');
@@ -712,30 +742,40 @@ class BlogDetailContent extends StatelessWidget {
           Positioned(
             left: AppDimensions.space20,
             right: AppDimensions.space20,
-            bottom: AppDimensions.space24,
+            bottom: isShortHeight
+                ? AppDimensions.space16
+                : AppDimensions.space24,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildCategoryBadge(),
-                const SizedBox(height: AppDimensions.space10),
+                _buildCategoryBadge(isCompact: isShortHeight),
+                SizedBox(
+                  height: isShortHeight
+                      ? AppDimensions.space6
+                      : AppDimensions.space10,
+                ),
                 Text(
                   blog.title.isNotEmpty ? blog.title : AppStrings.appName,
-                  maxLines: 3,
+                  maxLines: isShortHeight ? 2 : 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 22,
+                  style: TextStyle(
+                    fontSize: isShortHeight ? 18 : 22,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
-                    height: 1.3,
+                    height: 1.25,
                     letterSpacing: -0.4,
                   ),
                 ),
-                const SizedBox(height: AppDimensions.space10),
+                SizedBox(
+                  height: isShortHeight
+                      ? AppDimensions.space4
+                      : AppDimensions.space10,
+                ),
                 Text(
                   _formatMetadata(),
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: isShortHeight ? 11 : 13,
                     fontWeight: FontWeight.w400,
                     color: Colors.white.withValues(alpha: 0.85),
                   ),
@@ -765,15 +805,15 @@ class BlogDetailContent extends StatelessWidget {
     );
   }
 
-  Widget _buildCategoryBadge() {
+  Widget _buildCategoryBadge({bool isCompact = false}) {
     final badgeLabel = blog.newsSite.trim().isNotEmpty
         ? blog.newsSite.trim()
         : AppStrings.blogs;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppDimensions.space12,
-        vertical: AppDimensions.space6,
+      padding: EdgeInsets.symmetric(
+        horizontal: isCompact ? AppDimensions.space8 : AppDimensions.space12,
+        vertical: isCompact ? AppDimensions.space4 : AppDimensions.space6,
       ),
       decoration: BoxDecoration(
         color: AppColors.primary,
@@ -781,6 +821,8 @@ class BlogDetailContent extends StatelessWidget {
       ),
       child: Text(
         badgeLabel,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: const TextStyle(
           color: Colors.white,
           fontSize: 11,
@@ -865,17 +907,21 @@ class BlogDetailContent extends StatelessWidget {
     required double iconSize,
     required VoidCallback onPressed,
   }) {
-    return Material(
-      color: Colors.black.withValues(alpha: 0.35),
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      child: IconButton(
-        tooltip: tooltip,
-        icon: Icon(icon, size: iconSize, color: Colors.white),
-        padding: const EdgeInsets.all(AppDimensions.space10),
-        constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-        onPressed: onPressed,
+    return IconButton(
+      icon: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.35),
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Icon(icon, size: iconSize, color: Colors.white),
       ),
+      tooltip: tooltip,
+      constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+      padding: EdgeInsets.zero,
+      onPressed: onPressed,
     );
   }
 

@@ -138,7 +138,7 @@ void main() {
       expect(article.imageUrl, '');
       expect(article.newsSite, 'Spaceflight News');
       expect(article.summary, '');
-      expect(article.publishedAt, isA<DateTime>());
+      expect(article.publishedAt, isNull);
       expect(article.updatedAt, isNull);
       expect(article.featured, false);
       expect(article.launches.length, 1);
@@ -146,6 +146,138 @@ void main() {
       expect(article.events.length, 1);
       expect(article.events.first.eventId, 300);
     });
+
+    test(
+      'Article publication date handling: valid, missing, null, empty, invalid, serialization',
+      () {
+        // 1. Valid date
+        final validJson = {
+          'id': 1,
+          'title': 'Test Article',
+          'published_at': '2026-06-15T10:30:00Z',
+        };
+        final validArticle = Article.fromJson(validJson);
+        expect(
+          validArticle.publishedAt,
+          DateTime.parse('2026-06-15T10:30:00Z'),
+        );
+
+        // 2. Missing published_at key
+        final missingJson = {'id': 2, 'title': 'Test Article'};
+        final missingArticle = Article.fromJson(missingJson);
+        expect(missingArticle.publishedAt, isNull);
+
+        // 3. Null published_at
+        final nullJson = {
+          'id': 3,
+          'title': 'Test Article',
+          'published_at': null,
+        };
+        final nullArticle = Article.fromJson(nullJson);
+        expect(nullArticle.publishedAt, isNull);
+
+        // 4. Empty published_at
+        final emptyJson = {
+          'id': 4,
+          'title': 'Test Article',
+          'published_at': '',
+        };
+        final emptyArticle = Article.fromJson(emptyJson);
+        expect(emptyArticle.publishedAt, isNull);
+
+        // 4b. Whitespace published_at
+        final whitespaceJson = {
+          'id': 5,
+          'title': 'Test Article',
+          'published_at': '   ',
+        };
+        final whitespaceArticle = Article.fromJson(whitespaceJson);
+        expect(whitespaceArticle.publishedAt, isNull);
+
+        // 5. Invalid published_at
+        final invalidJson = {
+          'id': 6,
+          'title': 'Test Article',
+          'published_at': 'corrupted-timestamp',
+        };
+        final invalidArticle = Article.fromJson(invalidJson);
+        expect(invalidArticle.publishedAt, isNull);
+
+        // 6. Serialization when publishedAt is null
+        final serializedNull = nullArticle.toJson();
+        expect(serializedNull['published_at'], isNull);
+
+        // Serialization when publishedAt is valid
+        final serializedValid = validArticle.toJson();
+        expect(serializedValid['published_at'], '2026-06-15T10:30:00.000Z');
+      },
+    );
+
+    test(
+      'Article publication date handling: valid, missing, null, empty, invalid, serialization',
+      () {
+        // 1. Valid date
+        final validJson = {
+          'id': 1,
+          'title': 'Test Article',
+          'published_at': '2026-06-15T10:30:00Z',
+        };
+        final validArticle = Article.fromJson(validJson);
+        expect(
+          validArticle.publishedAt,
+          DateTime.parse('2026-06-15T10:30:00Z'),
+        );
+
+        // 2. Missing published_at key
+        final missingJson = {'id': 2, 'title': 'Test Article'};
+        final missingArticle = Article.fromJson(missingJson);
+        expect(missingArticle.publishedAt, isNull);
+
+        // 3. Null published_at
+        final nullJson = {
+          'id': 3,
+          'title': 'Test Article',
+          'published_at': null,
+        };
+        final nullArticle = Article.fromJson(nullJson);
+        expect(nullArticle.publishedAt, isNull);
+
+        // 4. Empty published_at
+        final emptyJson = {
+          'id': 4,
+          'title': 'Test Article',
+          'published_at': '',
+        };
+        final emptyArticle = Article.fromJson(emptyJson);
+        expect(emptyArticle.publishedAt, isNull);
+
+        // 4b. Whitespace published_at
+        final whitespaceJson = {
+          'id': 5,
+          'title': 'Test Article',
+          'published_at': '   ',
+        };
+        final whitespaceArticle = Article.fromJson(whitespaceJson);
+        expect(whitespaceArticle.publishedAt, isNull);
+
+        // 5. Invalid published_at
+        final invalidJson = {
+          'id': 6,
+          'title': 'Test Article',
+          'published_at': 'corrupted-timestamp',
+        };
+        final invalidArticle = Article.fromJson(invalidJson);
+        expect(invalidArticle.publishedAt, isNull);
+
+        // 6. Serialization when publishedAt is null
+        final serializedNull = nullArticle.toJson();
+        expect(serializedNull['published_at'], isNull);
+
+        // Serialization when publishedAt is valid
+        final serializedValid = validArticle.toJson();
+        expect(serializedValid['published_at'], '2026-06-15T10:30:00.000Z');
+      },
+    );
 
     test('Article equality and hashCode are based on id', () {
       final article1 = Article(

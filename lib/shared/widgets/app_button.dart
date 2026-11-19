@@ -75,9 +75,13 @@ class AppButton extends StatelessWidget {
           icon!,
           const SizedBox(width: AppDimensions.space8),
         ],
-        Text(
-          label,
-          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
         ),
       ],
     );
@@ -157,7 +161,13 @@ class AppButton extends StatelessWidget {
     }
 
     if (width != null) {
-      return SizedBox(width: width, child: button);
+      if (width == double.infinity) {
+        return SizedBox(width: width, child: button);
+      }
+      return ConstrainedBox(
+        constraints: BoxConstraints(minWidth: width!),
+        child: button,
+      );
     }
     return button;
   }
