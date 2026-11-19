@@ -627,33 +627,43 @@ class BlogDetailContent extends StatelessWidget {
     final effectiveTag = heroTag ?? 'blog_hero_${blog.id}';
 
     return SizedBox(
+      width: double.infinity,
       height: height,
       child: Stack(
         fit: StackFit.expand,
         children: [
           // Hero Image
-          Hero(
-            tag: effectiveTag,
-            child: blog.imageUrl.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: blog.imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: isDark
-                          ? AppColors.shimmerBaseDark
-                          : AppColors.shimmerBaseLight,
-                      child: const Center(
-                        child: SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+          Positioned.fill(
+            child: Hero(
+              tag: effectiveTag,
+              child: SizedBox.expand(
+                child: blog.imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: blog.imageUrl,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        placeholder: (context, url) => Container(
+                          width: double.infinity,
+                          height: double.infinity,
+                          color: isDark
+                              ? AppColors.shimmerBaseDark
+                              : AppColors.shimmerBaseLight,
+                          child: const Center(
+                            child: SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) =>
-                        _buildImageFallback(isDark),
-                  )
-                : _buildImageFallback(isDark),
+                        errorWidget: (context, url, error) =>
+                            _buildImageFallback(isDark),
+                      )
+                    : _buildImageFallback(isDark),
+              ),
+            ),
           ),
 
           // Gradient Overlay Scrim
@@ -691,6 +701,7 @@ class BlogDetailContent extends StatelessWidget {
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     _buildCircleIconButton(
                       icon: Icons.arrow_back_ios_new_rounded,
@@ -706,18 +717,19 @@ class BlogDetailContent extends StatelessWidget {
                     ),
                     Row(
                       mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         if (onRefresh != null)
                           _buildCircleIconButton(
                             icon: Icons.refresh_rounded,
                             tooltip: AppStrings.refresh,
-                            iconSize: 20,
+                            iconSize: 18,
                             onPressed: onRefresh!,
                           ),
                         _buildCircleIconButton(
                           icon: Icons.bookmark_border_rounded,
                           tooltip: AppStrings.bookmarks,
-                          iconSize: 20,
+                          iconSize: 18,
                           onPressed: () {
                             _showSnackBar(context, 'Bookmark saved');
                           },
@@ -725,7 +737,7 @@ class BlogDetailContent extends StatelessWidget {
                         _buildCircleIconButton(
                           icon: Icons.more_horiz_rounded,
                           tooltip: AppStrings.moreOptions,
-                          iconSize: 20,
+                          iconSize: 18,
                           onPressed: () {
                             _showSnackBar(context, 'Sharing: ${blog.title}');
                           },
@@ -927,13 +939,15 @@ class BlogDetailContent extends StatelessWidget {
 
   Widget _buildImageFallback(bool isDark) {
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       color: isDark
           ? AppColors.surfaceVariantDark
           : AppColors.surfaceVariantLight,
       child: Center(
         child: Icon(
           Icons.newspaper_rounded,
-          size: 56,
+          size: 64,
           color: isDark
               ? AppColors.textTertiaryDark
               : AppColors.textTertiaryLight,
@@ -971,9 +985,9 @@ class _BookPageTransition extends StatelessWidget {
         }
         final double delta = page - index;
 
-        // When delta is between 0.0 and 1.0, this page is the outgoing page
+        // When delta is between 0.001 and 1.0, this page is the outgoing page
         // (moving backward or being covered as the next page turns from the right).
-        if (delta > 0 && delta <= 1.0) {
+        if (delta > 0.001 && delta <= 1.0) {
           final scale = 1.0 - (0.04 * delta);
           final translationX = delta * 30.0;
           final scrimOpacity = (0.25 * delta).clamp(0.0, 0.25);
@@ -996,7 +1010,7 @@ class _BookPageTransition extends StatelessWidget {
               ),
             ),
           );
-        } else if (delta < 0 && delta >= -1.0) {
+        } else if (delta < -0.001 && delta >= -1.0) {
           // When delta is between -1.0 and 0.0, this page is the incoming page
           // (gliding over top from the right as user swipes left).
           // Render a soft book spine shadow along its left edge.

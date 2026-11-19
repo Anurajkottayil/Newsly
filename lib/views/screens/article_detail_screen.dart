@@ -504,33 +504,43 @@ class ArticleDetailContent extends StatelessWidget {
     final effectiveTag = heroTag ?? 'article_hero_${article.id}';
 
     return SizedBox(
+      width: double.infinity,
       height: height,
       child: Stack(
         fit: StackFit.expand,
         children: [
           // Hero Image
-          Hero(
-            tag: effectiveTag,
-            child: article.imageUrl.isNotEmpty
-                ? CachedNetworkImage(
-                    imageUrl: article.imageUrl,
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: isDark
-                          ? AppColors.shimmerBaseDark
-                          : AppColors.shimmerBaseLight,
-                      child: const Center(
-                        child: SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+          Positioned.fill(
+            child: Hero(
+              tag: effectiveTag,
+              child: SizedBox.expand(
+                child: article.imageUrl.isNotEmpty
+                    ? CachedNetworkImage(
+                        imageUrl: article.imageUrl,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                        alignment: Alignment.center,
+                        placeholder: (context, url) => Container(
+                          width: double.infinity,
+                          height: double.infinity,
+                          color: isDark
+                              ? AppColors.shimmerBaseDark
+                              : AppColors.shimmerBaseLight,
+                          child: const Center(
+                            child: SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) =>
-                        _buildImageFallback(isDark),
-                  )
-                : _buildImageFallback(isDark),
+                        errorWidget: (context, url, error) =>
+                            _buildImageFallback(isDark),
+                      )
+                    : _buildImageFallback(isDark),
+              ),
+            ),
           ),
 
           // Gradient Overlay Scrim
@@ -568,6 +578,7 @@ class ArticleDetailContent extends StatelessWidget {
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Back button
                     _buildFloatingButton(
@@ -809,6 +820,8 @@ class ArticleDetailContent extends StatelessWidget {
 
   Widget _buildImageFallback(bool isDark) {
     return Container(
+      width: double.infinity,
+      height: double.infinity,
       color: isDark
           ? AppColors.surfaceVariantDark
           : AppColors.surfaceVariantLight,
@@ -853,9 +866,9 @@ class _BookPageTransition extends StatelessWidget {
         }
         final double delta = page - index;
 
-        // When delta is between 0.0 and 1.0, this page is the outgoing page
+        // When delta is between 0.001 and 1.0, this page is the outgoing page
         // (moving backward or being covered as the next page turns from the right).
-        if (delta > 0 && delta <= 1.0) {
+        if (delta > 0.001 && delta <= 1.0) {
           final scale = 1.0 - (0.04 * delta);
           final translationX = delta * 30.0;
           final scrimOpacity = (0.25 * delta).clamp(0.0, 0.25);
@@ -878,7 +891,7 @@ class _BookPageTransition extends StatelessWidget {
               ),
             ),
           );
-        } else if (delta < 0 && delta >= -1.0) {
+        } else if (delta < -0.001 && delta >= -1.0) {
           // When delta is between -1.0 and 0.0, this page is the incoming page
           // (gliding over top from the right as user swipes left).
           // Render a soft book spine shadow along its left edge.

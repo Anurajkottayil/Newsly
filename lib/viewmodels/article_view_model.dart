@@ -23,6 +23,7 @@ class ArticleViewModel extends ChangeNotifier {
   String? _paginationError;
   String? _searchQuery;
   bool _disposed = false;
+  int _requestGeneration = 0;
 
   // Getters
   ViewState get state => _state;
@@ -58,6 +59,10 @@ class ArticleViewModel extends ChangeNotifier {
     // Prevent duplicate in-flight fetch requests
     if (_state == ViewState.loading) return;
 
+    final generation = ++_requestGeneration;
+    _isLoadingMore = false;
+    final previousOffset = _currentOffset;
+
     if (refresh) {
       _currentOffset = AppConstants.initialOffset;
     }
@@ -80,7 +85,7 @@ class ArticleViewModel extends ChangeNotifier {
         search: _searchQuery,
       );
 
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
 
       _totalCount = response.count;
       _hasMore = response.next != null && response.results.isNotEmpty;
@@ -101,15 +106,27 @@ class ArticleViewModel extends ChangeNotifier {
         _state = ViewState.loaded;
       }
     } on ApiException catch (e) {
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
       _errorMessage = e.message;
-      _state = ViewState.error;
+      if (_articles.isNotEmpty) {
+        _currentOffset = previousOffset;
+        _state = ViewState.loaded;
+      } else {
+        _state = ViewState.error;
+      }
     } catch (e) {
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
       _errorMessage = e.toString();
-      _state = ViewState.error;
+      if (_articles.isNotEmpty) {
+        _currentOffset = previousOffset;
+        _state = ViewState.loaded;
+      } else {
+        _state = ViewState.error;
+      }
     } finally {
-      notifyListeners();
+      if (!_disposed && generation == _requestGeneration) {
+        notifyListeners();
+      }
     }
   }
 
@@ -124,6 +141,7 @@ class ArticleViewModel extends ChangeNotifier {
       return;
     }
 
+    final generation = _requestGeneration;
     _isLoadingMore = true;
     _paginationError = null;
     notifyListeners();
@@ -136,7 +154,7 @@ class ArticleViewModel extends ChangeNotifier {
         search: _searchQuery,
       );
 
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
 
       _totalCount = response.count;
       _currentOffset = nextOffset;
@@ -151,14 +169,16 @@ class ArticleViewModel extends ChangeNotifier {
 
       _state = _articles.isEmpty ? ViewState.empty : ViewState.loaded;
     } on ApiException catch (e) {
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
       _paginationError = e.message;
     } catch (e) {
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
       _paginationError = e.toString();
     } finally {
-      _isLoadingMore = false;
-      notifyListeners();
+      if (!_disposed && generation == _requestGeneration) {
+        _isLoadingMore = false;
+        notifyListeners();
+      }
     }
   }
 

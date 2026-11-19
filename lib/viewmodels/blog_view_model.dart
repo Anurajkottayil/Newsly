@@ -21,6 +21,7 @@ class BlogViewModel extends ChangeNotifier {
   bool _hasMore = false;
   String? _searchQuery;
   bool _disposed = false;
+  int _requestGeneration = 0;
 
   // Getters
   ViewState get state => _state;
@@ -56,6 +57,10 @@ class BlogViewModel extends ChangeNotifier {
     // Prevent duplicate in-flight fetch requests
     if (_state == ViewState.loading) return;
 
+    final generation = ++_requestGeneration;
+    _isLoadingMore = false;
+    final previousOffset = _currentOffset;
+
     if (refresh) {
       _currentOffset = AppConstants.initialOffset;
     }
@@ -78,7 +83,7 @@ class BlogViewModel extends ChangeNotifier {
         search: _searchQuery,
       );
 
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
 
       _totalCount = response.count;
       _hasMore = response.next != null && response.results.isNotEmpty;
@@ -99,15 +104,27 @@ class BlogViewModel extends ChangeNotifier {
         _state = ViewState.loaded;
       }
     } on ApiException catch (e) {
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
       _errorMessage = e.message;
-      _state = ViewState.error;
+      if (_blogs.isNotEmpty) {
+        _currentOffset = previousOffset;
+        _state = ViewState.loaded;
+      } else {
+        _state = ViewState.error;
+      }
     } catch (e) {
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
       _errorMessage = e.toString();
-      _state = ViewState.error;
+      if (_blogs.isNotEmpty) {
+        _currentOffset = previousOffset;
+        _state = ViewState.loaded;
+      } else {
+        _state = ViewState.error;
+      }
     } finally {
-      notifyListeners();
+      if (!_disposed && generation == _requestGeneration) {
+        notifyListeners();
+      }
     }
   }
 
@@ -122,6 +139,7 @@ class BlogViewModel extends ChangeNotifier {
       return;
     }
 
+    final generation = _requestGeneration;
     _isLoadingMore = true;
     _paginationError = null;
     notifyListeners();
@@ -134,7 +152,7 @@ class BlogViewModel extends ChangeNotifier {
         search: _searchQuery,
       );
 
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
 
       _totalCount = response.count;
       _currentOffset = nextOffset;
@@ -149,14 +167,16 @@ class BlogViewModel extends ChangeNotifier {
 
       _state = _blogs.isEmpty ? ViewState.empty : ViewState.loaded;
     } on ApiException catch (e) {
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
       _paginationError = e.message;
     } catch (e) {
-      if (_disposed) return;
+      if (_disposed || generation != _requestGeneration) return;
       _paginationError = e.toString();
     } finally {
-      _isLoadingMore = false;
-      notifyListeners();
+      if (!_disposed && generation == _requestGeneration) {
+        _isLoadingMore = false;
+        notifyListeners();
+      }
     }
   }
 
