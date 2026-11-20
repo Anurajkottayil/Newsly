@@ -469,11 +469,13 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Swipe LEFT to reach last loaded article (index 1)
-      await tester.drag(find.byType(PageView), const Offset(-400, 0));
+      // Fling LEFT to reach last loaded article (index 1) — fling triggers onPageChanged.
+      await tester.fling(find.byType(PageView), const Offset(-400, 0), 800);
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.pump();
+      // Allow the addPostFrameCallback queued by _checkTriggerPagination to execute.
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Expect pagination loadMore() was triggered automatically
       expect(mockRepo.callCount, 2);

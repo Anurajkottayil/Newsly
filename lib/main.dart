@@ -5,8 +5,10 @@ import 'core/network/api_client.dart';
 import 'core/theme/app_theme.dart';
 import 'repositories/article_repository.dart';
 import 'repositories/blog_repository.dart';
+import 'repositories/bookmark_repository.dart';
 import 'viewmodels/article_view_model.dart';
 import 'viewmodels/blog_view_model.dart';
+import 'viewmodels/bookmark_view_model.dart';
 import 'views/screens/discover_screen.dart';
 
 void main() {
@@ -22,12 +24,14 @@ class NewslyApp extends StatefulWidget {
   final ApiClient? apiClient;
   final ArticleRepository? articleRepository;
   final BlogRepository? blogRepository;
+  final BookmarkRepository? bookmarkRepository;
 
   const NewslyApp({
     super.key,
     this.apiClient,
     this.articleRepository,
     this.blogRepository,
+    this.bookmarkRepository,
   });
 
   @override
@@ -62,6 +66,10 @@ class _NewslyAppState extends State<NewslyApp> {
           update: (_, apiClient, _) =>
               widget.blogRepository ?? BlogRepositoryImpl(apiClient: apiClient),
         ),
+        Provider<BookmarkRepository>(
+          create: (_) =>
+              widget.bookmarkRepository ?? BookmarkRepositoryImpl(),
+        ),
 
         // ViewModels
         ChangeNotifierProxyProvider<ArticleRepository, ArticleViewModel>(
@@ -74,6 +82,12 @@ class _NewslyAppState extends State<NewslyApp> {
           create: (context) => BlogViewModel(context.read<BlogRepository>()),
           update: (_, repository, previous) =>
               previous ?? BlogViewModel(repository),
+        ),
+        ChangeNotifierProxyProvider<BookmarkRepository, BookmarkViewModel>(
+          create: (context) =>
+              BookmarkViewModel(context.read<BookmarkRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? BookmarkViewModel(repository),
         ),
       ],
       child: ValueListenableBuilder<ThemeMode>(

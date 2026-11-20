@@ -7,11 +7,13 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../models/article_model.dart';
+import '../../services/share_service.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_empty_view.dart';
 import '../../shared/widgets/app_loader.dart';
 import '../../viewmodels/article_view_model.dart';
-import '../widgets/responsive_layout.dart';
+import '../../viewmodels/bookmark_view_model.dart';
+import '../widgets/detail_more_options_sheet.dart';
 
 /// Article Detail Screen with Gmail-like swipe navigation and pagination.
 ///
@@ -24,6 +26,7 @@ class ArticleDetailScreen extends StatefulWidget {
   final int? initialIndex;
   final String? heroTag;
   final VoidCallback? onBack;
+  final ShareService? shareService;
 
   const ArticleDetailScreen({
     super.key,
@@ -32,6 +35,7 @@ class ArticleDetailScreen extends StatefulWidget {
     this.initialIndex,
     this.heroTag,
     this.onBack,
+    this.shareService,
   });
 
   @override
@@ -45,6 +49,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   bool _controllerInitialized = false;
   int? _lastRequestedOffset;
   List<Article>? _lastKnownArticles;
+  final Set<int> _localBookmarks = <int>{};
 
   @override
   void dispose() {
@@ -84,7 +89,14 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       viewModel = null;
     }
 
-    final articles = viewModel != null
+    BookmarkViewModel? bookmarkVm;
+    try {
+      bookmarkVm = Provider.of<BookmarkViewModel>(context, listen: true);
+    } catch (_) {
+      bookmarkVm = null;
+    }
+
+    final articles = (viewModel != null && viewModel.articles.isNotEmpty)
         ? viewModel.articles
         : (widget.article != null ? [widget.article!] : const <Article>[]);
 
@@ -230,10 +242,31 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               ? widget.heroTag
               : 'article_hero_${article.id}';
 
+          final isBookmarked = bookmarkVm != null
+              ? bookmarkVm.isArticleBookmarked(article.id)
+              : _localBookmarks.contains(article.id);
+
           pageChild = ArticleDetailContent(
             article: article,
             heroTag: heroTag,
             onBack: widget.onBack,
+            isBookmarked: isBookmarked,
+            shareService: widget.shareService,
+            onToggleBookmark: () async {
+              if (bookmarkVm != null) {
+                return await bookmarkVm.toggleArticleBookmark(article.id);
+              } else {
+                final wasSaved = _localBookmarks.contains(article.id);
+                setState(() {
+                  if (wasSaved) {
+                    _localBookmarks.remove(article.id);
+                  } else {
+                    _localBookmarks.add(article.id);
+                  }
+                });
+                return !wasSaved;
+              }
+            },
           );
         }
 
@@ -337,12 +370,18 @@ class ArticleDetailContent extends StatelessWidget {
   final Article article;
   final String? heroTag;
   final VoidCallback? onBack;
+  final bool? isBookmarked;
+  final Future<bool> Function()? onToggleBookmark;
+  final ShareService? shareService;
 
   const ArticleDetailContent({
     super.key,
     required this.article,
     this.heroTag,
     this.onBack,
+    this.isBookmarked,
+    this.onToggleBookmark,
+    this.shareService,
   });
 
   String _formatDate(DateTime? dateTime) {
@@ -407,12 +446,53 @@ class ArticleDetailContent extends StatelessWidget {
   }
 
   void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
       ),
+    );
+  }
+
+  Future<void> _onBookmarkTapped(
+    BuildContext context,
+    bool currentSavedState,
+    BookmarkViewModel? bookmarkVm,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final bool isNowBookmarked;
+    if (onToggleBookmark != null) {
+      isNowBookmarked = await onToggleBookmark!();
+    } else if (bookmarkVm != null) {
+      isNowBookmarked = await bookmarkVm.toggleArticleBookmark(article.id);
+    } else {
+      isNowBookmarked = !currentSavedState;
+    }
+
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          isNowBookmarked
+              ? AppStrings.bookmarkSaved
+              : AppStrings.bookmarkRemoved,
+        ),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _onMoreOptionsTapped(BuildContext context) {
+    showDetailMoreOptionsSheet(
+      context: context,
+      title: article.title,
+      url: article.url,
+      isBlog: false,
+      onOpenOriginal: () => _launchArticleUrl(context),
+      shareService: shareService ?? const ShareServiceImpl(),
     );
   }
 
@@ -424,70 +504,135 @@ class ArticleDetailContent extends StatelessWidget {
     final screenHeight = size.height;
     final isShortHeight = screenHeight < 500;
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
+    BookmarkViewModel? bookmarkVm;
+    try {
+      bookmarkVm = Provider.of<BookmarkViewModel>(context, listen: true);
+    } catch (_) {
+      bookmarkVm = null;
+    }
+    final effectiveIsBookmarked = bookmarkVm != null
+        ? bookmarkVm.isArticleBookmarked(article.id)
+        : (isBookmarked ?? false);
+
+    final screenWidth = size.width;
+    final isTablet = screenWidth >= AppDimensions.tabletBreakpoint;
+
+    // Tablet-aware hero height: use a taller fraction and larger clamps on big screens.
     final minHeroHeight = isShortHeight
         ? (190.0 * textScale).clamp(180.0, 300.0)
+        : isTablet
+        ? (380.0 * textScale).clamp(380.0, 600.0)
         : (320.0 * textScale).clamp(320.0, 520.0);
     final maxHeroHeight = isShortHeight
         ? (280.0 * textScale).clamp(240.0, 380.0)
+        : isTablet
+        ? (560.0 * textScale).clamp(480.0, 680.0)
         : (440.0 * textScale).clamp(440.0, 600.0);
-    final targetFraction = isShortHeight ? 0.60 : 0.44;
+    final targetFraction = isShortHeight ? 0.60 : (isTablet ? 0.48 : 0.44);
     final heroHeight = (screenHeight * targetFraction).clamp(
       minHeroHeight,
       maxHeroHeight,
     );
 
-    final panelColor = isDark ? AppColors.cardDark : Colors.white;
+    // Responsive container width:
+    // - Phone (< 600) and standard tablet (600..1024) use full available width (0 outer gaps).
+    // - Very large tablets/desktop (> 1024) use a sensible max width of desktopBreakpoint (1024).
+    final contentMaxWidth = isTablet
+        ? (screenWidth > AppDimensions.desktopBreakpoint
+              ? AppDimensions.desktopBreakpoint
+              : double.infinity)
+        : double.infinity;
+
+    // Responsive horizontal padding:
+    // Keeps reading column comfortable while aligning headline, controls and content.
+    final double hPadding;
+    if (!isTablet) {
+      hPadding = AppDimensions.space20;
+    } else if (screenWidth <= 640) {
+      hPadding = AppDimensions.space24;
+    } else if (screenWidth <= 768) {
+      hPadding = AppDimensions.space32;
+    } else if (screenWidth <= 896) {
+      hPadding = AppDimensions.space40;
+    } else {
+      final effectiveWidth = screenWidth > AppDimensions.desktopBreakpoint
+          ? AppDimensions.desktopBreakpoint
+          : screenWidth;
+      hPadding = ((effectiveWidth - 760.0) / 2).clamp(
+        AppDimensions.space48,
+        140.0,
+      );
+    }
+
+    final panelColor = isDark ? AppColors.surfaceDark : Colors.white;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
-      body: ResponsiveLayout(
-        maxWidth: 760,
-        mobile: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1. Upper Hero Section with Floating Controls & Text Overlay
-              _buildHeroSection(
-                context,
-                heroHeight,
-                isDark,
-                panelColor,
-                isShortHeight: isShortHeight,
-              ),
-
-              // 2. Main Content Panel
-              Container(
-                color: panelColor,
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimensions.space20,
-                  AppDimensions.space8,
-                  AppDimensions.space20,
-                  AppDimensions.space32,
+      backgroundColor: panelColor,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: contentMaxWidth),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Upper Hero Section with Floating Controls & Text Overlay
+                _buildHeroSection(
+                  context,
+                  heroHeight,
+                  isDark,
+                  panelColor,
+                  effectiveIsBookmarked,
+                  bookmarkVm,
+                  isShortHeight: isShortHeight,
+                  horizontalPadding: hPadding,
+                  isTablet: isTablet,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Publisher / Source Row
-                    _buildPublisherRow(context, isDark),
 
-                    const SizedBox(height: AppDimensions.space20),
+                // 2. Main Content Panel — natural height, CTA follows content
+                Container(
+                  color: panelColor,
+                  padding: EdgeInsets.fromLTRB(
+                    hPadding,
+                    AppDimensions.space8,
+                    hPadding,
+                    AppDimensions.space20 + bottomInset,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Publisher / Source Row
+                      _buildPublisherRow(context, isDark),
 
-                    // Article Summary
-                    _buildSummaryContent(isDark),
+                      const SizedBox(height: AppDimensions.space20),
 
-                    const SizedBox(height: AppDimensions.space32),
+                      // Article Summary
+                      _buildSummaryContent(isDark),
 
-                    // Read Full Article Button
-                    AppButton(
-                      label: AppStrings.readFullArticle,
-                      width: double.infinity,
-                      onPressed: () => _launchArticleUrl(context),
-                    ),
-                  ],
+                      const SizedBox(height: AppDimensions.space24),
+
+                      // Read Full Article Button — immediately after content
+                      AppButton(
+                        label: AppStrings.readFullArticle,
+                        width: double.infinity,
+                        height: 50.0,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusMd,
+                        ),
+                        trailingIcon: const Icon(
+                          Icons.open_in_new_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        onPressed: () => _launchArticleUrl(context),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -498,8 +643,12 @@ class ArticleDetailContent extends StatelessWidget {
     BuildContext context,
     double height,
     bool isDark,
-    Color panelColor, {
+    Color panelColor,
+    bool isBookmarked,
+    BookmarkViewModel? bookmarkVm, {
     bool isShortHeight = false,
+    double horizontalPadding = AppDimensions.space20,
+    bool isTablet = false,
   }) {
     final effectiveTag = heroTag ?? 'article_hero_${article.id}';
 
@@ -571,7 +720,9 @@ class ArticleDetailContent extends StatelessWidget {
               bottom: false,
               child: Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: AppDimensions.space16,
+                  horizontal: isTablet
+                      ? horizontalPadding
+                      : AppDimensions.space16,
                   vertical: isShortHeight
                       ? AppDimensions.space4
                       : AppDimensions.space8,
@@ -598,18 +749,23 @@ class ArticleDetailContent extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         _buildFloatingButton(
-                          icon: Icons.bookmark_border_rounded,
+                          icon: isBookmarked
+                              ? Icons.bookmark_rounded
+                              : Icons.bookmark_border_rounded,
+                          iconColor: isBookmarked
+                              ? const Color(0xFFFBBF24)
+                              : Colors.white,
                           tooltip: AppStrings.bookmarks,
-                          onPressed: () {
-                            // Visual control per reference specification
-                          },
+                          onPressed: () => _onBookmarkTapped(
+                            context,
+                            isBookmarked,
+                            bookmarkVm,
+                          ),
                         ),
                         _buildFloatingButton(
                           icon: Icons.more_horiz_rounded,
                           tooltip: AppStrings.moreOptions,
-                          onPressed: () {
-                            // Visual control per reference specification
-                          },
+                          onPressed: () => _onMoreOptionsTapped(context),
                         ),
                       ],
                     ),
@@ -621,8 +777,8 @@ class ArticleDetailContent extends StatelessWidget {
 
           // Article Info on Hero (Category, Title, Metadata)
           Positioned(
-            left: AppDimensions.space20,
-            right: AppDimensions.space20,
+            left: horizontalPadding,
+            right: horizontalPadding,
             bottom: isShortHeight
                 ? AppDimensions.space16
                 : AppDimensions.space24,
@@ -701,6 +857,7 @@ class ArticleDetailContent extends StatelessWidget {
     required VoidCallback onPressed,
     String? tooltip,
     double iconSize = 18,
+    Color iconColor = Colors.white,
   }) {
     return IconButton(
       icon: Container(
@@ -711,7 +868,7 @@ class ArticleDetailContent extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
-        child: Icon(icon, color: Colors.white, size: iconSize),
+        child: Icon(icon, color: iconColor, size: iconSize),
       ),
       tooltip: tooltip,
       constraints: const BoxConstraints(minWidth: 48, minHeight: 48),

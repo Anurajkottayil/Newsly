@@ -7,8 +7,8 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../shared/widgets/app_empty_view.dart';
 import '../../shared/widgets/app_error_view.dart';
-import '../../shared/widgets/app_loader.dart';
 import '../../shared/widgets/article_card.dart';
+import '../../shared/widgets/shimmer_loading.dart';
 import '../../viewmodels/article_view_model.dart';
 import '../../viewmodels/blog_view_model.dart';
 import '../widgets/responsive_layout.dart';
@@ -58,6 +58,8 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   String _blogSelectedCategory = 'All';
   String? _articleSearchQuery;
   String? _blogSearchQuery;
+  bool _isRefreshingArticles = false;
+  bool _isRefreshingBlogs = false;
 
   String get _selectedCategory => _contentType == _ContentType.articles
       ? _articleSelectedCategory
@@ -665,9 +667,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Widget _buildArticleBody(BuildContext context, bool isDark) {
     final viewModel = context.watch<ArticleViewModel>();
 
-    // 1. Initial Loading State
-    if (viewModel.isLoading && viewModel.articles.isEmpty) {
-      return const AppLoader(message: AppStrings.loadingArticles);
+    // 1. Shimmer Loading State
+    // Shows shimmer skeletons during initial load, keyword changes, or category filter changes.
+    // Preserves existing cards during pull-to-refresh on already populated feeds.
+    final isPullToRefresh =
+        _isRefreshingArticles && viewModel.articles.isNotEmpty;
+    if (viewModel.isLoading && !isPullToRefresh) {
+      return ShimmerLoadingFeed(
+        semanticLabel: AppStrings.loadingArticles,
+        scrollController: _articleScrollController,
+      );
     }
 
     // 2. Full-Screen Error State
@@ -822,9 +831,15 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   Widget _buildBlogBody(BuildContext context, bool isDark) {
     final viewModel = context.watch<BlogViewModel>();
 
-    // 1. Initial Loading State
-    if (viewModel.isLoading && viewModel.blogs.isEmpty) {
-      return const AppLoader(message: AppStrings.loadingBlogs);
+    // 1. Shimmer Loading State
+    // Shows shimmer skeletons during initial load, keyword changes, or category filter changes.
+    // Preserves existing cards during pull-to-refresh on already populated feeds.
+    final isPullToRefresh = _isRefreshingBlogs && viewModel.blogs.isNotEmpty;
+    if (viewModel.isLoading && !isPullToRefresh) {
+      return ShimmerLoadingFeed(
+        semanticLabel: AppStrings.loadingBlogs,
+        scrollController: _blogScrollController,
+      );
     }
 
     // 2. Full-Screen Error State
@@ -864,7 +879,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   Future<void> _onRefreshArticles(ArticleViewModel viewModel) async {
-    await viewModel.fetchArticles(refresh: true);
+    setState(() {
+      _isRefreshingArticles = true;
+    });
+    try {
+      await viewModel.fetchArticles(refresh: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshingArticles = false;
+        });
+      }
+    }
     if (!mounted) return;
     if (viewModel.errorMessage != null && viewModel.articles.isNotEmpty) {
       _showSnackBar(context, viewModel.errorMessage!);
@@ -872,7 +898,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   Future<void> _onRefreshBlogs(BlogViewModel viewModel) async {
-    await viewModel.fetchBlogs(refresh: true);
+    setState(() {
+      _isRefreshingBlogs = true;
+    });
+    try {
+      await viewModel.fetchBlogs(refresh: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshingBlogs = false;
+        });
+      }
+    }
     if (!mounted) return;
     if (viewModel.errorMessage != null && viewModel.blogs.isNotEmpty) {
       _showSnackBar(context, viewModel.errorMessage!);
@@ -882,10 +919,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   void _showSnackBar(BuildContext context, String message) {
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
     );
   }
 
