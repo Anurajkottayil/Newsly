@@ -117,6 +117,9 @@ class ArticleCard extends StatelessWidget {
         ? authorName!.trim()
         : newsSite;
 
+    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final cacheDim = (104 * devicePixelRatio).round().clamp(104, 400);
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppDimensions.space6),
       child: Material(
@@ -140,6 +143,9 @@ class ArticleCard extends StatelessWidget {
                       child: imageUrl.isNotEmpty
                           ? CachedNetworkImage(
                               imageUrl: imageUrl,
+                              memCacheWidth: cacheDim,
+                              memCacheHeight: cacheDim,
+                              maxWidthDiskCache: 600,
                               fit: BoxFit.cover,
                               placeholder: (context, url) => Container(
                                 color: isDark

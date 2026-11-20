@@ -10,8 +10,13 @@ import '../constants/app_dimensions.dart';
 class AppTheme {
   AppTheme._();
 
-  /// Light Theme
-  static ThemeData get lightTheme {
+  /// Cached Light Theme instance.
+  static final ThemeData lightTheme = _buildLightTheme();
+
+  /// Cached Dark Theme instance.
+  static final ThemeData darkTheme = _buildDarkTheme();
+
+  static ThemeData _buildLightTheme() {
     final colorScheme = ColorScheme.light(
       primary: AppColors.primary,
       onPrimary: Colors.white,
@@ -146,8 +151,7 @@ class AppTheme {
     );
   }
 
-  /// Dark Theme
-  static ThemeData get darkTheme {
+  static ThemeData _buildDarkTheme() {
     final colorScheme = ColorScheme.dark(
       primary: AppColors.primaryLight,
       onPrimary: Colors.white,

@@ -10,9 +10,13 @@ import 'viewmodels/article_view_model.dart';
 import 'viewmodels/blog_view_model.dart';
 import 'viewmodels/bookmark_view_model.dart';
 import 'views/screens/discover_screen.dart';
+import 'views/screens/splash_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // Warm up the splash icon immediately so it is decoded before or on the first frame
+  const AssetImage('assets/branding/newsly_splash_icon.png')
+      .resolve(ImageConfiguration.empty);
   runApp(const NewslyApp());
 }
 
@@ -25,6 +29,8 @@ class NewslyApp extends StatefulWidget {
   final ArticleRepository? articleRepository;
   final BlogRepository? blogRepository;
   final BookmarkRepository? bookmarkRepository;
+  final bool showSplash;
+  final Duration splashDuration;
 
   const NewslyApp({
     super.key,
@@ -32,6 +38,8 @@ class NewslyApp extends StatefulWidget {
     this.articleRepository,
     this.blogRepository,
     this.bookmarkRepository,
+    this.showSplash = true,
+    this.splashDuration = const Duration(seconds: 3),
   });
 
   @override
@@ -99,7 +107,9 @@ class _NewslyAppState extends State<NewslyApp> {
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeMode,
-            home: const DiscoverScreen(),
+            home: widget.showSplash
+                ? SplashScreen(duration: widget.splashDuration)
+                : const DiscoverScreen(),
           );
         },
       ),

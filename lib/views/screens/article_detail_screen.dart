@@ -651,6 +651,11 @@ class ArticleDetailContent extends StatelessWidget {
     bool isTablet = false,
   }) {
     final effectiveTag = heroTag ?? 'article_hero_${article.id}';
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final heroCacheWidth =
+        (MediaQuery.sizeOf(context).width.clamp(320.0, 1024.0) * dpr)
+            .round()
+            .clamp(600, 2048);
 
     return SizedBox(
       width: double.infinity,
@@ -666,6 +671,8 @@ class ArticleDetailContent extends StatelessWidget {
                 child: article.imageUrl.isNotEmpty
                     ? CachedNetworkImage(
                         imageUrl: article.imageUrl,
+                        memCacheWidth: heroCacheWidth,
+                        maxWidthDiskCache: 2048,
                         width: double.infinity,
                         height: double.infinity,
                         fit: BoxFit.cover,

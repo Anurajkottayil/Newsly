@@ -1309,5 +1309,35 @@ void main() {
         expect(mockBlogRepo.lastOffset, 10);
       },
     );
+
+    testWidgets(
+      'DiscoverScreen does not display an unnecessary back button and renders header with search and filter controls',
+      (WidgetTester tester) async {
+        final mockRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+        await tester.pumpWidget(createTestWidget(repository: mockRepo));
+        await tester.pumpAndSettle();
+
+        // 1. Verify NO back button or back tooltip is rendered on DiscoverScreen
+        expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsNothing);
+        expect(find.byTooltip(AppStrings.back), findsNothing);
+
+        // 2. Verify Discover title and subtitle are visible
+        expect(find.text(AppStrings.discover), findsOneWidget);
+        expect(find.text(AppStrings.discoverSubtitle), findsOneWidget);
+
+        // 3. Verify Search and Filter controls remain available
+        expect(find.byType(TextField), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('search_filter_button')),
+          findsOneWidget,
+        );
+
+        // 4. Verify Discover title has clean top clearance
+        final titleTop = tester.getTopLeft(find.text(AppStrings.discover)).dy;
+        expect(titleTop, greaterThan(0));
+      },
+    );
   });
 }

@@ -4,7 +4,6 @@ class AppStrings {
 
   // Application
   static const String appName = 'Newsly';
-  static const String appTagline = 'Stay Informed with Space & Tech News';
 
   // Discover Screen Reference
   static const String discover = 'Discover';
@@ -16,24 +15,16 @@ class AppStrings {
   static const String articles = 'Articles';
   static const String blogs = 'Blogs';
   static const String bookmarks = 'Bookmarks';
-  static const String settings = 'Settings';
 
   // Common Labels
-  static const String readMore = 'Read More';
   static const String readFullArticle = 'Read full article';
   static const String readFullBlogPost = 'Read full blog post';
   static const String trending = 'Trending';
   static const String dateUnavailable = 'Date unavailable';
   static const String search = 'Search';
-  static const String searchHint = 'Search articles and blogs...';
-  static const String publishedOn = 'Published';
-  static const String author = 'Author';
-  static const String source = 'Source';
   static const String filter = 'Filter';
   static const String clear = 'Clear';
   static const String retry = 'Retry';
-  static const String tryAgain = 'Try Again';
-  static const String retryLoadingMore = 'Failed to load more. Tap to retry.';
   static const String back = 'Back';
   static const String share = 'Share';
   static const String shareArticle = 'Share article';
@@ -46,7 +37,6 @@ class AppStrings {
   static const String openOriginalArticle = 'Open original article';
   static const String openOriginalBlog = 'Open original blog post';
   static const String moreOptions = 'More options';
-  static const String more = 'More options';
   static const String refresh = 'Refresh';
 
   // Loading Messages
