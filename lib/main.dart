@@ -6,9 +6,11 @@ import 'core/theme/app_theme.dart';
 import 'repositories/article_repository.dart';
 import 'repositories/blog_repository.dart';
 import 'repositories/bookmark_repository.dart';
+import 'repositories/report_repository.dart';
 import 'viewmodels/article_view_model.dart';
 import 'viewmodels/blog_view_model.dart';
 import 'viewmodels/bookmark_view_model.dart';
+import 'viewmodels/report_view_model.dart';
 import 'views/screens/discover_screen.dart';
 import 'views/screens/splash_screen.dart';
 
@@ -28,6 +30,7 @@ class NewslyApp extends StatefulWidget {
   final ApiClient? apiClient;
   final ArticleRepository? articleRepository;
   final BlogRepository? blogRepository;
+  final ReportRepository? reportRepository;
   final BookmarkRepository? bookmarkRepository;
   final bool showSplash;
   final Duration splashDuration;
@@ -37,6 +40,7 @@ class NewslyApp extends StatefulWidget {
     this.apiClient,
     this.articleRepository,
     this.blogRepository,
+    this.reportRepository,
     this.bookmarkRepository,
     this.showSplash = true,
     this.splashDuration = const Duration(seconds: 3),
@@ -74,6 +78,11 @@ class _NewslyAppState extends State<NewslyApp> {
           update: (_, apiClient, _) =>
               widget.blogRepository ?? BlogRepositoryImpl(apiClient: apiClient),
         ),
+        ProxyProvider<ApiClient, ReportRepository>(
+          update: (_, apiClient, _) =>
+              widget.reportRepository ??
+              ReportRepositoryImpl(apiClient: apiClient),
+        ),
         Provider<BookmarkRepository>(
           create: (_) =>
               widget.bookmarkRepository ?? BookmarkRepositoryImpl(),
@@ -90,6 +99,12 @@ class _NewslyAppState extends State<NewslyApp> {
           create: (context) => BlogViewModel(context.read<BlogRepository>()),
           update: (_, repository, previous) =>
               previous ?? BlogViewModel(repository),
+        ),
+        ChangeNotifierProxyProvider<ReportRepository, ReportViewModel>(
+          create: (context) =>
+              ReportViewModel(context.read<ReportRepository>()),
+          update: (_, repository, previous) =>
+              previous ?? ReportViewModel(repository),
         ),
         ChangeNotifierProxyProvider<BookmarkRepository, BookmarkViewModel>(
           create: (context) =>

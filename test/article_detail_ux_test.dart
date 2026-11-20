@@ -399,6 +399,41 @@ void main() {
       expect(bookmarkVm.isBlogBookmarked(sampleBlog1.id), isTrue);
     });
 
+    testWidgets('Article, Blog, and Report bookmark states are completely independent and do not collide', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final repo = BookmarkRepositoryImpl();
+      await repo.init();
+      final bookmarkVm = BookmarkViewModel(repo);
+
+      const id = 10;
+      await bookmarkVm.toggleArticleBookmark(id);
+      expect(bookmarkVm.isArticleBookmarked(id), isTrue);
+      expect(bookmarkVm.isBlogBookmarked(id), isFalse);
+      expect(bookmarkVm.isReportBookmarked(id), isFalse);
+
+      await bookmarkVm.toggleReportBookmark(id);
+      expect(bookmarkVm.isArticleBookmarked(id), isTrue);
+      expect(bookmarkVm.isBlogBookmarked(id), isFalse);
+      expect(bookmarkVm.isReportBookmarked(id), isTrue);
+
+      await bookmarkVm.toggleBlogBookmark(id);
+      expect(bookmarkVm.isArticleBookmarked(id), isTrue);
+      expect(bookmarkVm.isBlogBookmarked(id), isTrue);
+      expect(bookmarkVm.isReportBookmarked(id), isTrue);
+
+      // Verify persistence across restart for all three
+      final restartRepo = BookmarkRepositoryImpl();
+      await restartRepo.init();
+      expect(restartRepo.isArticleBookmarked(id), isTrue);
+      expect(restartRepo.isBlogBookmarked(id), isTrue);
+      expect(restartRepo.isReportBookmarked(id), isTrue);
+      expect(restartRepo.bookmarkedArticleIds, contains(id));
+      expect(restartRepo.bookmarkedBlogIds, contains(id));
+      expect(restartRepo.bookmarkedReportIds, contains(id));
+    });
+
     testWidgets('Bookmark persistence survives repository re-initialization (app restart)', (
       tester,
     ) async {

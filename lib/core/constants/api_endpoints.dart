@@ -16,4 +16,10 @@ class ApiEndpoints {
 
   /// Blog details endpoint by [id].
   static String blogDetails(int id) => '/blogs/$id/';
+
+  /// Reports collection endpoint.
+  static const String reports = '/reports/';
+
+  /// Report details endpoint by [id].
+  static String reportDetails(int id) => '/reports/$id/';
 }

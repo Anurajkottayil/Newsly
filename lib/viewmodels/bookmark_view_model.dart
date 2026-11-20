@@ -24,6 +24,8 @@ class BookmarkViewModel extends ChangeNotifier {
 
   bool isBlogBookmarked(int id) => _repository.isBlogBookmarked(id);
 
+  bool isReportBookmarked(int id) => _repository.isReportBookmarked(id);
+
   Future<bool> toggleArticleBookmark(int id) async {
     final result = await _repository.toggleArticleBookmark(id);
     notifyListeners();
@@ -32,6 +34,12 @@ class BookmarkViewModel extends ChangeNotifier {
 
   Future<bool> toggleBlogBookmark(int id) async {
     final result = await _repository.toggleBlogBookmark(id);
+    notifyListeners();
+    return result;
+  }
+
+  Future<bool> toggleReportBookmark(int id) async {
+    final result = await _repository.toggleReportBookmark(id);
     notifyListeners();
     return result;
   }

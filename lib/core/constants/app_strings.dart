@@ -14,11 +14,13 @@ class AppStrings {
   // Navigation / Tabs
   static const String articles = 'Articles';
   static const String blogs = 'Blogs';
+  static const String reports = 'Reports';
   static const String bookmarks = 'Bookmarks';
 
   // Common Labels
   static const String readFullArticle = 'Read full article';
   static const String readFullBlogPost = 'Read full blog post';
+  static const String readFullReport = 'Read full report';
   static const String trending = 'Trending';
   static const String dateUnavailable = 'Date unavailable';
   static const String search = 'Search';
@@ -29,6 +31,7 @@ class AppStrings {
   static const String share = 'Share';
   static const String shareArticle = 'Share article';
   static const String shareBlog = 'Share blog post';
+  static const String shareReport = 'Share report';
   static const String copyLink = 'Copy link';
   static const String linkCopied = 'Link copied to clipboard';
   static const String noUrlToCopy = 'No link available to copy';
@@ -36,12 +39,14 @@ class AppStrings {
   static const String bookmarkRemoved = 'Bookmark removed';
   static const String openOriginalArticle = 'Open original article';
   static const String openOriginalBlog = 'Open original blog post';
+  static const String openOriginalReport = 'Open original report';
   static const String moreOptions = 'More options';
   static const String refresh = 'Refresh';
 
   // Loading Messages
   static const String loadingArticles = 'Loading latest articles...';
   static const String loadingBlogs = 'Loading latest blogs...';
+  static const String loadingReports = 'Loading latest reports...';
   static const String loadingDetails = 'Fetching details...';
   static const String loadingGeneral = 'Please wait...';
 
@@ -52,6 +57,9 @@ class AppStrings {
   static const String noBlogsTitle = 'No Blogs Found';
   static const String noBlogsSubtitle =
       'There are currently no blogs available. Try refreshing or check back later.';
+  static const String noReportsTitle = 'No Reports Found';
+  static const String noReportsSubtitle =
+      'There are currently no reports available. Try refreshing or check back later.';
   static const String noSearchResultsTitle = 'No Results Found';
   static const String noSearchResultsSubtitle =
       'We could not find anything matching your query. Try a different search term.';

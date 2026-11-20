@@ -6,17 +6,21 @@ import 'package:newsly/core/errors/api_exception.dart';
 import 'package:newsly/core/theme/app_theme.dart';
 import 'package:newsly/models/article_model.dart';
 import 'package:newsly/models/blog_model.dart';
+import 'package:newsly/models/report_model.dart';
 import 'package:newsly/repositories/article_repository.dart';
 import 'package:newsly/repositories/blog_repository.dart';
+import 'package:newsly/repositories/report_repository.dart';
 import 'package:newsly/shared/widgets/app_empty_view.dart';
 import 'package:newsly/shared/widgets/app_error_view.dart';
 import 'package:newsly/shared/widgets/article_card.dart';
 import 'package:newsly/shared/widgets/shimmer_loading.dart';
 import 'package:newsly/viewmodels/article_view_model.dart';
 import 'package:newsly/viewmodels/blog_view_model.dart';
+import 'package:newsly/viewmodels/report_view_model.dart';
 import 'package:newsly/views/screens/discover_screen.dart';
 import 'package:newsly/views/screens/article_detail_screen.dart';
 import 'package:newsly/views/screens/blog_detail_screen.dart';
+import 'package:newsly/views/screens/report_detail_screen.dart';
 import 'package:provider/provider.dart';
 
 /// Test mock implementation of [ArticleRepository] for UI state tests.
@@ -187,20 +191,110 @@ class MockBlogRepository implements BlogRepository {
   }
 }
 
+/// Test mock implementation of [ReportRepository] for UI state tests.
+class MockReportRepository implements ReportRepository {
+  List<Report> reportsToReturn;
+  String? nextUrl;
+  bool shouldThrow;
+  String errorMessage;
+  int callCount = 0;
+  String? lastSearch;
+  int? lastOffset;
+  Completer<PaginatedReports>? completer;
+  Completer<PaginatedReports>? paginationCompleter;
+  bool shouldThrowOnPagination = false;
+  List<Report>? paginationReportsToReturn;
+  String paginationErrorMessage = 'Pagination network failure';
+  bool emptyForSearch = false;
+
+  MockReportRepository({
+    this.reportsToReturn = const [],
+    this.nextUrl,
+    this.shouldThrow = false,
+    this.errorMessage = 'Network error',
+    this.completer,
+  });
+
+  @override
+  Future<PaginatedReports> getReports({
+    int limit = 10,
+    int offset = 0,
+    String? search,
+  }) async {
+    callCount++;
+    lastOffset = offset;
+    lastSearch = search;
+
+    if (offset > 0) {
+      if (paginationCompleter != null) {
+        return paginationCompleter!.future;
+      }
+      if (shouldThrowOnPagination) {
+        throw ApiException(
+          message: paginationErrorMessage,
+          type: ApiExceptionType.network,
+        );
+      }
+      final items = paginationReportsToReturn ?? reportsToReturn;
+      return PaginatedReports(
+        count: reportsToReturn.length + items.length,
+        next: null,
+        previous: null,
+        results: items,
+      );
+    }
+
+    if (completer != null) {
+      return completer!.future;
+    }
+
+    if (shouldThrow) {
+      throw ApiException(message: errorMessage, type: ApiExceptionType.network);
+    }
+
+    if (emptyForSearch && search != null && search.isNotEmpty) {
+      return const PaginatedReports(
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+      );
+    }
+
+    return PaginatedReports(
+      count: reportsToReturn.length + (nextUrl != null ? 10 : 0),
+      next: nextUrl,
+      previous: null,
+      results: reportsToReturn,
+    );
+  }
+
+  @override
+  Future<Report> getReportById(int id) async {
+    return reportsToReturn.firstWhere((r) => r.id == id);
+  }
+}
+
 Widget createTestWidget({
   required ArticleRepository repository,
   BlogRepository? blogRepository,
+  ReportRepository? reportRepository,
 }) {
   final blogRepo = blogRepository ?? MockBlogRepository();
+  final reportRepo = reportRepository ?? MockReportRepository();
   return MultiProvider(
     providers: [
       Provider<ArticleRepository>.value(value: repository),
       Provider<BlogRepository>.value(value: blogRepo),
+      Provider<ReportRepository>.value(value: reportRepo),
       ChangeNotifierProvider<ArticleViewModel>(
         create: (_) => ArticleViewModel(repository),
       ),
       ChangeNotifierProvider<BlogViewModel>(
         create: (_) => BlogViewModel(blogRepo),
+      ),
+      ChangeNotifierProvider<ReportViewModel>(
+        create: (_) => ReportViewModel(reportRepo),
       ),
     ],
     child: MaterialApp(
@@ -1337,6 +1431,253 @@ void main() {
         // 4. Verify Discover title has clean top clearance
         final titleTop = tester.getTopLeft(find.text(AppStrings.discover)).dy;
         expect(titleTop, greaterThan(0));
+      },
+    );
+
+    testWidgets('Reports option appears in filter sheet with outline icon', (
+      WidgetTester tester,
+    ) async {
+      final mockArticleRepo = MockArticleRepository();
+      await tester.pumpWidget(createTestWidget(repository: mockArticleRepo));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('filter_option_articles')), findsOneWidget);
+      expect(find.byKey(const ValueKey('filter_option_blogs')), findsOneWidget);
+      expect(find.byKey(const ValueKey('filter_option_reports')), findsOneWidget);
+      expect(find.text(AppStrings.reports), findsOneWidget);
+      expect(find.byIcon(Icons.assignment_outlined), findsOneWidget);
+    });
+
+    testWidgets(
+      'Selecting Reports in filter sheet switches to Reports feed and triggers fetch',
+      (WidgetTester tester) async {
+        final mockArticleRepo = MockArticleRepository(articlesToReturn: sampleArticles);
+        final sampleReports = [
+          Report(
+            id: 101,
+            title: 'Space Station Crew Report',
+            authors: const [Author(name: 'Commander')],
+            url: 'https://example.com/report/101',
+            imageUrl: '',
+            newsSite: 'ISS Ops',
+            summary: 'Weekly summary of ongoing station maintenance and research.',
+            publishedAt: DateTime(2023, 4, 1),
+          ),
+        ];
+        final mockReportRepo = MockReportRepository(reportsToReturn: sampleReports);
+
+        await tester.pumpWidget(
+          createTestWidget(
+            repository: mockArticleRepo,
+            reportRepository: mockReportRepo,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('What Training Do Volleyball Players Need?'), findsOneWidget);
+
+        // Open content type sheet
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+
+        // Tap Reports
+        await tester.tap(find.byKey(const ValueKey('filter_option_reports')));
+        await tester.pumpAndSettle();
+
+        // Reports feed is active
+        expect(mockReportRepo.callCount, 1);
+        expect(find.text('Space Station Crew Report'), findsOneWidget);
+        expect(find.text('ISS Ops'), findsOneWidget);
+      },
+    );
+
+    testWidgets('Reports feed displays AppEmptyView when empty', (
+      WidgetTester tester,
+    ) async {
+      final mockArticleRepo = MockArticleRepository();
+      final mockReportRepo = MockReportRepository(reportsToReturn: []);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          repository: mockArticleRepo,
+          reportRepository: mockReportRepo,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Reports
+      await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('filter_option_reports')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppEmptyView), findsOneWidget);
+      expect(find.text(AppStrings.noReportsTitle), findsOneWidget);
+    });
+
+    testWidgets('Reports feed displays AppErrorView on failure and retries', (
+      WidgetTester tester,
+    ) async {
+      final mockArticleRepo = MockArticleRepository();
+      final mockReportRepo = MockReportRepository(
+        shouldThrow: true,
+        errorMessage: 'Reports server down',
+      );
+
+      await tester.pumpWidget(
+        createTestWidget(
+          repository: mockArticleRepo,
+          reportRepository: mockReportRepo,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Reports
+      await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('filter_option_reports')));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppErrorView), findsOneWidget);
+      expect(find.text('Reports server down'), findsOneWidget);
+
+      // Fix repo and retry
+      mockReportRepo.shouldThrow = false;
+      mockReportRepo.reportsToReturn = [
+        Report(
+          id: 102,
+          title: 'Resolved Mission Overview',
+          authors: const [Author(name: 'Flight Lead')],
+          url: 'https://example.com/report/102',
+          imageUrl: '',
+          newsSite: 'NASA',
+          summary: 'Mission objectives met.',
+          publishedAt: DateTime(2023, 4, 2),
+        ),
+      ];
+
+      await tester.tap(find.text(AppStrings.retry));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AppErrorView), findsNothing);
+      expect(find.text('Resolved Mission Overview'), findsOneWidget);
+    });
+
+    testWidgets('Tapping Report card navigates to ReportDetailScreen', (
+      WidgetTester tester,
+    ) async {
+      final mockArticleRepo = MockArticleRepository();
+      final sampleReport = Report(
+        id: 105,
+        title: 'Deep Space Navigation Status',
+        authors: const [Author(name: 'JPL Nav')],
+        url: 'https://example.com/report/105',
+        imageUrl: '',
+        newsSite: 'JPL',
+        summary: 'Deep space trajectory updates.',
+        publishedAt: DateTime(2023, 4, 5),
+      );
+      final mockReportRepo = MockReportRepository(reportsToReturn: [sampleReport]);
+
+      await tester.pumpWidget(
+        createTestWidget(
+          repository: mockArticleRepo,
+          reportRepository: mockReportRepo,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Switch to Reports
+      await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('filter_option_reports')));
+      await tester.pumpAndSettle();
+
+      // Tap report card
+      await tester.tap(find.text('Deep Space Navigation Status'));
+      await tester.pumpAndSettle();
+
+      // Navigated to ReportDetailScreen
+      expect(find.byType(ReportDetailScreen), findsOneWidget);
+      expect(find.text(AppStrings.readFullReport), findsOneWidget);
+    });
+
+    testWidgets(
+      'Switching between Articles, Blogs, and Reports preserves independent state',
+      (WidgetTester tester) async {
+        final mockArticleRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
+        final mockBlogRepo = MockBlogRepository(
+          blogsToReturn: [
+            Blog(
+              id: 201,
+              title: 'Blog Post One',
+              authors: const [Author(name: 'Writer A')],
+              url: 'https://example.com/blog/201',
+              imageUrl: '',
+              newsSite: 'BlogSite',
+              summary: 'Summary of blog post one',
+              publishedAt: DateTime(2023, 3, 1),
+            ),
+          ],
+        );
+        final mockReportRepo = MockReportRepository(
+          reportsToReturn: [
+            Report(
+              id: 301,
+              title: 'Report Doc One',
+              authors: const [Author(name: 'Analyst A')],
+              url: 'https://example.com/report/301',
+              imageUrl: '',
+              newsSite: 'ReportSite',
+              summary: 'Summary of report doc one',
+              publishedAt: DateTime(2023, 4, 1),
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          createTestWidget(
+            repository: mockArticleRepo,
+            blogRepository: mockBlogRepo,
+            reportRepository: mockReportRepo,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // 1. Articles initial state
+        expect(find.text('What Training Do Volleyball Players Need?'), findsOneWidget);
+
+        // Switch to Blogs
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Blog Post One'), findsOneWidget);
+        expect(find.text('What Training Do Volleyball Players Need?'), findsNothing);
+
+        // Switch to Reports
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('filter_option_reports')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Report Doc One'), findsOneWidget);
+        expect(find.text('Blog Post One'), findsNothing);
+
+        // Switch back to Articles
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('filter_option_articles')));
+        await tester.pumpAndSettle();
+
+        expect(find.text('What Training Do Volleyball Players Need?'), findsOneWidget);
+        expect(find.text('Report Doc One'), findsNothing);
       },
     );
   });

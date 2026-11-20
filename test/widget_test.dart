@@ -1,8 +1,13 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:newsly/core/constants/app_strings.dart';
 import 'package:newsly/main.dart';
 import 'package:newsly/models/article_model.dart';
 import 'package:newsly/repositories/article_repository.dart';
+import 'package:newsly/repositories/report_repository.dart';
+import 'package:newsly/viewmodels/report_view_model.dart';
+import 'package:newsly/views/screens/discover_screen.dart';
+import 'package:provider/provider.dart';
 
 class MockArticleRepo implements ArticleRepository {
   @override
@@ -48,5 +53,21 @@ void main() {
 
     // Verify All category chip is present.
     expect(find.text('All'), findsOneWidget);
+  });
+
+  testWidgets('NewslyApp provides ReportRepository and ReportViewModel correctly', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(
+      NewslyApp(
+        articleRepository: MockArticleRepo(),
+        showSplash: false,
+      ),
+    );
+    await tester.pump();
+
+    final BuildContext context = tester.element(find.byType(DiscoverScreen));
+    expect(Provider.of<ReportRepository>(context, listen: false), isNotNull);
+    expect(Provider.of<ReportViewModel>(context, listen: false), isNotNull);
   });
 }
