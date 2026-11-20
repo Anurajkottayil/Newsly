@@ -11,17 +11,19 @@ import '../../shared/widgets/article_card.dart';
 import '../../shared/widgets/shimmer_loading.dart';
 import '../../viewmodels/article_view_model.dart';
 import '../../viewmodels/blog_view_model.dart';
+import '../../viewmodels/report_view_model.dart';
 import '../widgets/responsive_layout.dart';
 import 'article_detail_screen.dart';
 import 'blog_detail_screen.dart';
+import 'report_detail_screen.dart';
 
-enum _ContentType { articles, blogs }
+enum _ContentType { articles, blogs, reports }
 
 /// Discover / News & Blogs List screen implementing the exact UI design from the project specification.
 ///
 /// Features:
 /// - Dark navy Discover heading and subtitle on a clean white background.
-/// - Explore content bottom sheet filter for switching between Articles and Blogs.
+/// - Explore content bottom sheet filter for switching between Articles, Blogs, and Reports.
 /// - Rounded light-gray search bar with search icon, clear button, and filter icon.
 /// - Debounced search querying title and summary via the Spaceflight News API.
 /// - Horizontally scrollable category chips with bright blue selected state.
@@ -40,6 +42,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _articleScrollController = ScrollController();
   final ScrollController _blogScrollController = ScrollController();
+  final ScrollController _reportScrollController = ScrollController();
   Timer? _debounceTimer;
 
   _ContentType _contentType = _ContentType.articles;
@@ -56,20 +59,31 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   String _articleSelectedCategory = 'All';
   String _blogSelectedCategory = 'All';
+  String _reportSelectedCategory = 'All';
   String? _articleSearchQuery;
   String? _blogSearchQuery;
+  String? _reportSearchQuery;
   bool _isRefreshingArticles = false;
   bool _isRefreshingBlogs = false;
+  bool _isRefreshingReports = false;
 
-  String get _selectedCategory => _contentType == _ContentType.articles
-      ? _articleSelectedCategory
-      : _blogSelectedCategory;
+  String get _selectedCategory {
+    switch (_contentType) {
+      case _ContentType.articles:
+        return _articleSelectedCategory;
+      case _ContentType.blogs:
+        return _blogSelectedCategory;
+      case _ContentType.reports:
+        return _reportSelectedCategory;
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     _articleScrollController.addListener(_onArticleScroll);
     _blogScrollController.addListener(_onBlogScroll);
+    _reportScrollController.addListener(_onReportScroll);
 
     // Initial load for articles
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -88,6 +102,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     _searchController.dispose();
     _articleScrollController.dispose();
     _blogScrollController.dispose();
+    _reportScrollController.dispose();
     super.dispose();
   }
 
@@ -115,6 +130,18 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     }
   }
 
+  void _onReportScroll() {
+    if (!_reportScrollController.hasClients) return;
+    final maxScroll = _reportScrollController.position.maxScrollExtent;
+    final currentScroll = _reportScrollController.position.pixels;
+
+    // Trigger pagination when reaching within 200px of the bottom
+    if (currentScroll >= maxScroll - 200) {
+      final reportVm = Provider.of<ReportViewModel?>(context, listen: false);
+      reportVm?.loadMore();
+    }
+  }
+
   void _onSearchChanged(String query) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(AppConstants.searchDebounceDuration, () {
@@ -130,13 +157,20 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           listen: false,
         );
         articleVm?.fetchArticles(search: trimmed, refresh: true);
-      } else {
+      } else if (_contentType == _ContentType.blogs) {
         setState(() {
           _blogSearchQuery = trimmed.isEmpty ? null : trimmed;
           _blogSelectedCategory = trimmed.isEmpty ? 'All' : '';
         });
         final blogVm = Provider.of<BlogViewModel?>(context, listen: false);
         blogVm?.fetchBlogs(search: trimmed, refresh: true);
+      } else {
+        setState(() {
+          _reportSearchQuery = trimmed.isEmpty ? null : trimmed;
+          _reportSelectedCategory = trimmed.isEmpty ? 'All' : '';
+        });
+        final reportVm = Provider.of<ReportViewModel?>(context, listen: false);
+        reportVm?.fetchReports(search: trimmed, refresh: true);
       }
     });
   }
@@ -160,7 +194,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           viewModel.fetchArticles(search: category, refresh: true);
         }
       }
-    } else {
+    } else if (_contentType == _ContentType.blogs) {
       setState(() {
         _blogSelectedCategory = category;
         _blogSearchQuery = category == 'All' ? null : category;
@@ -174,6 +208,22 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           blogVm.clearSearch();
         } else {
           blogVm.fetchBlogs(search: category, refresh: true);
+        }
+      }
+    } else {
+      setState(() {
+        _reportSelectedCategory = category;
+        _reportSearchQuery = category == 'All' ? null : category;
+        _searchController.text = category == 'All' ? '' : category;
+      });
+
+      _debounceTimer?.cancel();
+      final reportVm = Provider.of<ReportViewModel?>(context, listen: false);
+      if (reportVm != null) {
+        if (category == 'All') {
+          reportVm.clearSearch();
+        } else {
+          reportVm.fetchReports(search: category, refresh: true);
         }
       }
     }
@@ -190,13 +240,20 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       });
       final articleVm = Provider.of<ArticleViewModel?>(context, listen: false);
       articleVm?.clearSearch();
-    } else {
+    } else if (_contentType == _ContentType.blogs) {
       setState(() {
         _blogSelectedCategory = 'All';
         _blogSearchQuery = null;
       });
       final blogVm = Provider.of<BlogViewModel?>(context, listen: false);
       blogVm?.clearSearch();
+    } else {
+      setState(() {
+        _reportSelectedCategory = 'All';
+        _reportSearchQuery = null;
+      });
+      final reportVm = Provider.of<ReportViewModel?>(context, listen: false);
+      reportVm?.clearSearch();
     }
   }
 
@@ -210,10 +267,14 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         _searchController.text =
             _articleSearchQuery ??
             (_articleSelectedCategory == 'All' ? '' : _articleSelectedCategory);
-      } else {
+      } else if (type == _ContentType.blogs) {
         _searchController.text =
             _blogSearchQuery ??
             (_blogSelectedCategory == 'All' ? '' : _blogSelectedCategory);
+      } else {
+        _searchController.text =
+            _reportSearchQuery ??
+            (_reportSelectedCategory == 'All' ? '' : _reportSelectedCategory);
       }
     });
 
@@ -221,6 +282,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
       final blogVm = Provider.of<BlogViewModel?>(context, listen: false);
       if (blogVm != null && blogVm.blogs.isEmpty && !blogVm.isLoading) {
         blogVm.fetchBlogs();
+      }
+    } else if (type == _ContentType.reports) {
+      final reportVm = Provider.of<ReportViewModel?>(context, listen: false);
+      if (reportVm != null && reportVm.reports.isEmpty && !reportVm.isLoading) {
+        reportVm.fetchReports();
       }
     }
   }
@@ -490,6 +556,22 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
                             _onContentTypeChanged(_ContentType.blogs);
                           },
                         ),
+                        const SizedBox(height: AppDimensions.space8),
+                        // Reports option
+                        _buildContentTypeOption(
+                          context: sheetContext,
+                          key: const ValueKey('filter_option_reports'),
+                          title: AppStrings.reports,
+                          icon: Icons.assignment_outlined,
+                          isSelected: _contentType == _ContentType.reports,
+                          activeColor: activeColor,
+                          primaryTextColor: primaryTextColor,
+                          secondaryTextColor: secondaryTextColor,
+                          onTap: () {
+                            Navigator.of(sheetContext).pop();
+                            _onContentTypeChanged(_ContentType.reports);
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -647,10 +729,16 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           return _buildArticleBody(context, viewModel, isDark);
         },
       );
-    } else {
+    } else if (_contentType == _ContentType.blogs) {
       return Consumer<BlogViewModel>(
         builder: (context, viewModel, _) {
           return _buildBlogBody(context, viewModel, isDark);
+        },
+      );
+    } else {
+      return Consumer<ReportViewModel>(
+        builder: (context, viewModel, _) {
+          return _buildReportBody(context, viewModel, isDark);
         },
       );
     }
@@ -1072,6 +1160,211 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
   }
 
   Widget _buildBlogPaginationErrorFooter(BlogViewModel viewModel, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppDimensions.space16),
+      child: Column(
+        children: [
+          Text(
+            viewModel.paginationError ?? AppStrings.genericError,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12, color: AppColors.error),
+          ),
+          const SizedBox(height: AppDimensions.space8),
+          TextButton.icon(
+            onPressed: viewModel.retryLoadMore,
+            icon: const Icon(Icons.refresh_rounded, size: 16),
+            label: const Text(
+              AppStrings.retry,
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReportBody(
+    BuildContext context,
+    ReportViewModel viewModel,
+    bool isDark,
+  ) {
+    final isPullToRefresh =
+        _isRefreshingReports && viewModel.reports.isNotEmpty;
+    if (viewModel.isLoading && !isPullToRefresh) {
+      return ShimmerLoadingFeed(
+        semanticLabel: AppStrings.loadingReports,
+        scrollController: _reportScrollController,
+      );
+    }
+
+    if (viewModel.hasError && viewModel.reports.isEmpty) {
+      return AppErrorView(
+        message: viewModel.errorMessage ?? AppStrings.genericError,
+        onRetry: () => viewModel.fetchReports(refresh: true),
+      );
+    }
+
+    if (viewModel.isEmpty) {
+      final isSearching =
+          viewModel.searchQuery != null && viewModel.searchQuery!.isNotEmpty;
+      return AppEmptyView(
+        title: isSearching
+            ? AppStrings.noSearchResultsTitle
+            : AppStrings.noReportsTitle,
+        message: isSearching
+            ? AppStrings.noSearchResultsSubtitle
+            : AppStrings.noReportsSubtitle,
+        actionLabel: AppStrings.retry,
+        onAction: _clearSearch,
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = _getColumnCount(constraints.maxWidth);
+        return RefreshIndicator(
+          onRefresh: () => _onRefreshReports(viewModel),
+          child: _buildReportFeedList(context, viewModel, columns, isDark),
+        );
+      },
+    );
+  }
+
+  Future<void> _onRefreshReports(ReportViewModel viewModel) async {
+    setState(() {
+      _isRefreshingReports = true;
+    });
+    try {
+      await viewModel.fetchReports(refresh: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRefreshingReports = false;
+        });
+      }
+    }
+    if (!mounted) return;
+    if (viewModel.errorMessage != null && viewModel.reports.isNotEmpty) {
+      _showSnackBar(context, viewModel.errorMessage!);
+    }
+  }
+
+  Widget _buildReportFeedList(
+    BuildContext context,
+    ReportViewModel viewModel,
+    int columns,
+    bool isDark,
+  ) {
+    if (columns <= 1) {
+      // Single-column phone layout
+      return ListView.builder(
+        key: const PageStorageKey('reports_feed_list'),
+        controller: _reportScrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimensions.space20,
+          vertical: AppDimensions.space8,
+        ),
+        itemCount:
+            viewModel.reports.length +
+            (viewModel.isLoadingMore || viewModel.paginationError != null
+                ? 1
+                : 0),
+        itemBuilder: (context, index) {
+          if (index == viewModel.reports.length) {
+            if (viewModel.paginationError != null) {
+              return _buildReportPaginationErrorFooter(viewModel, isDark);
+            }
+            return _buildPaginationLoadingFooter(isDark);
+          }
+
+          final report = viewModel.reports[index];
+          return ArticleCard.fromReport(
+            report: report,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ReportDetailScreen(
+                    initialReportId: report.id,
+                    initialIndex: index,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      );
+    }
+
+    // Multi-column tablet/desktop grid layout
+    final reports = viewModel.reports;
+    final rowCount = (reports.length / columns).ceil();
+    final hasFooter =
+        viewModel.isLoadingMore || viewModel.paginationError != null;
+    final totalCount = rowCount + (hasFooter ? 1 : 0);
+
+    return ListView.builder(
+      key: const PageStorageKey('reports_feed_list'),
+      controller: _reportScrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.space20,
+        vertical: AppDimensions.space8,
+      ),
+      itemCount: totalCount,
+      itemBuilder: (context, rowIndex) {
+        if (rowIndex == rowCount) {
+          if (viewModel.paginationError != null) {
+            return _buildReportPaginationErrorFooter(viewModel, isDark);
+          }
+          return _buildPaginationLoadingFooter(isDark);
+        }
+
+        final startIndex = rowIndex * columns;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppDimensions.space2),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (int col = 0; col < columns; col++) ...[
+                  if (col > 0) const SizedBox(width: AppDimensions.space16),
+                  Expanded(
+                    child: (startIndex + col < reports.length)
+                        ? Builder(
+                            builder: (context) {
+                              final itemIndex = startIndex + col;
+                              final report = reports[itemIndex];
+                              return ArticleCard.fromReport(
+                                report: report,
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => ReportDetailScreen(
+                                        initialReportId: report.id,
+                                        initialIndex: itemIndex,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildReportPaginationErrorFooter(
+    ReportViewModel viewModel,
+    bool isDark,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppDimensions.space16),
       child: Column(

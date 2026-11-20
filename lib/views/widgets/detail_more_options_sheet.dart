@@ -11,7 +11,8 @@ Future<void> showDetailMoreOptionsSheet({
   required BuildContext context,
   required String title,
   required String url,
-  required bool isBlog,
+  bool isBlog = false,
+  bool isReport = false,
   required Future<void> Function() onOpenOriginal,
   ShareService shareService = const ShareServiceImpl(),
 }) {
@@ -23,6 +24,15 @@ Future<void> showDetailMoreOptionsSheet({
   final secondaryTextColor =
       isDark ? AppColors.textSecondaryDark : AppColors.textSecondaryLight;
   final dividerColor = isDark ? AppColors.borderDark : AppColors.borderLight;
+
+  final String shareLabel = isReport
+      ? AppStrings.shareReport
+      : (isBlog ? AppStrings.shareBlog : AppStrings.shareArticle);
+  final String openOriginalLabel = isReport
+      ? AppStrings.openOriginalReport
+      : (isBlog
+            ? AppStrings.openOriginalBlog
+            : AppStrings.openOriginalArticle);
 
   return showModalBottomSheet<void>(
     context: context,
@@ -76,10 +86,10 @@ Future<void> showDetailMoreOptionsSheet({
 
               const SizedBox(height: AppDimensions.space8),
 
-              // 1. Share Article / Blog
+              // 1. Share Article / Blog / Report
               _buildOptionTile(
                 icon: Icons.share_rounded,
-                title: isBlog ? AppStrings.shareBlog : AppStrings.shareArticle,
+                title: shareLabel,
                 textColor: textColor,
                 onTap: () {
                   Navigator.of(sheetContext).pop();
@@ -119,12 +129,10 @@ Future<void> showDetailMoreOptionsSheet({
                 },
               ),
 
-              // 3. Open Original Article / Blog
+              // 3. Open Original Article / Blog / Report
               _buildOptionTile(
                 icon: Icons.open_in_new_rounded,
-                title: isBlog
-                    ? AppStrings.openOriginalBlog
-                    : AppStrings.openOriginalArticle,
+                title: openOriginalLabel,
                 textColor: textColor,
                 onTap: () {
                   Navigator.of(sheetContext).pop();

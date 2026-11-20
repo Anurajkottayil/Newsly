@@ -5,6 +5,7 @@ import '../../core/constants/app_dimensions.dart';
 import '../../core/constants/app_strings.dart';
 import '../../models/article_model.dart';
 import '../../models/blog_model.dart';
+import '../../models/report_model.dart';
 
 /// Reusable news card widget matching the reference List Screen design.
 ///
@@ -74,6 +75,26 @@ class ArticleCard extends StatelessWidget {
       publishedAt: blog.publishedAt,
       authorName: blog.authors.isNotEmpty ? blog.authors.first.name : null,
       featured: blog.featured,
+      onTap: onTap,
+    );
+  }
+
+  /// Factory adapter for creating an [ArticleCard] directly from a [Report] model.
+  factory ArticleCard.fromReport({
+    Key? key,
+    required Report report,
+    VoidCallback? onTap,
+  }) {
+    return ArticleCard(
+      key: key ?? ValueKey('report_${report.id}'),
+      id: report.id,
+      title: report.title,
+      imageUrl: report.imageUrl,
+      newsSite: report.newsSite,
+      summary: report.summary,
+      publishedAt: report.publishedAt,
+      authorName: report.authors.isNotEmpty ? report.authors.first.name : null,
+      featured: false,
       onTap: onTap,
     );
   }

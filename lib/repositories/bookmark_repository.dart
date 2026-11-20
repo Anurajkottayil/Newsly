@@ -5,25 +5,30 @@ abstract class BookmarkRepository {
   Future<void> init();
   bool isArticleBookmarked(int id);
   bool isBlogBookmarked(int id);
+  bool isReportBookmarked(int id);
   Future<bool> toggleArticleBookmark(int id);
   Future<bool> toggleBlogBookmark(int id);
+  Future<bool> toggleReportBookmark(int id);
   Set<int> get bookmarkedArticleIds;
   Set<int> get bookmarkedBlogIds;
+  Set<int> get bookmarkedReportIds;
 }
 
 /// SharedPreferences-backed implementation of [BookmarkRepository].
 ///
 /// Stores bookmarks using distinct type keys to prevent ID collisions
-/// between articles and blogs.
+/// between articles, blogs, and reports.
 class BookmarkRepositoryImpl implements BookmarkRepository {
   static const String _articlesKey = 'newsly_bookmarked_articles';
   static const String _blogsKey = 'newsly_bookmarked_blogs';
+  static const String _reportsKey = 'newsly_bookmarked_reports';
 
   final SharedPreferences? _prefsInstance;
   SharedPreferences? _prefs;
 
   final Set<int> _articleIds = <int>{};
   final Set<int> _blogIds = <int>{};
+  final Set<int> _reportIds = <int>{};
   bool _initialized = false;
 
   BookmarkRepositoryImpl({SharedPreferences? preferences})
@@ -45,6 +50,12 @@ class BookmarkRepositoryImpl implements BookmarkRepository {
         final id = int.tryParse(str);
         if (id != null) _blogIds.add(id);
       }
+
+      final savedReports = _prefs?.getStringList(_reportsKey) ?? <String>[];
+      for (final str in savedReports) {
+        final id = int.tryParse(str);
+        if (id != null) _reportIds.add(id);
+      }
     } catch (_) {
       // Fallback gracefully to in-memory storage if preferences fails
     }
@@ -59,6 +70,11 @@ class BookmarkRepositoryImpl implements BookmarkRepository {
   @override
   bool isBlogBookmarked(int id) {
     return _blogIds.contains(id);
+  }
+
+  @override
+  bool isReportBookmarked(int id) {
+    return _reportIds.contains(id);
   }
 
   @override
@@ -87,6 +103,19 @@ class BookmarkRepositoryImpl implements BookmarkRepository {
     return !isSaved;
   }
 
+  @override
+  Future<bool> toggleReportBookmark(int id) async {
+    if (!_initialized) await init();
+    final isSaved = _reportIds.contains(id);
+    if (isSaved) {
+      _reportIds.remove(id);
+    } else {
+      _reportIds.add(id);
+    }
+    await _persistReports();
+    return !isSaved;
+  }
+
   Future<void> _persistArticles() async {
     try {
       final list = _articleIds.map((id) => id.toString()).toList();
@@ -101,9 +130,19 @@ class BookmarkRepositoryImpl implements BookmarkRepository {
     } catch (_) {}
   }
 
+  Future<void> _persistReports() async {
+    try {
+      final list = _reportIds.map((id) => id.toString()).toList();
+      await _prefs?.setStringList(_reportsKey, list);
+    } catch (_) {}
+  }
+
   @override
   Set<int> get bookmarkedArticleIds => Set.unmodifiable(_articleIds);
 
   @override
   Set<int> get bookmarkedBlogIds => Set.unmodifiable(_blogIds);
+
+  @override
+  Set<int> get bookmarkedReportIds => Set.unmodifiable(_reportIds);
 }
