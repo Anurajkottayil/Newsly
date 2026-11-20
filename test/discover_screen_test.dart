@@ -10,8 +10,8 @@ import 'package:newsly/repositories/article_repository.dart';
 import 'package:newsly/repositories/blog_repository.dart';
 import 'package:newsly/shared/widgets/app_empty_view.dart';
 import 'package:newsly/shared/widgets/app_error_view.dart';
-import 'package:newsly/shared/widgets/app_loader.dart';
 import 'package:newsly/shared/widgets/article_card.dart';
+import 'package:newsly/shared/widgets/shimmer_loading.dart';
 import 'package:newsly/viewmodels/article_view_model.dart';
 import 'package:newsly/viewmodels/blog_view_model.dart';
 import 'package:newsly/views/screens/discover_screen.dart';
@@ -235,7 +235,7 @@ void main() {
   ];
 
   group('DiscoverScreen Functional & UI Tests', () {
-    testWidgets('Displays AppLoader when initial request is in-flight', (
+    testWidgets('Displays skeleton cards when initial request is in-flight', (
       WidgetTester tester,
     ) async {
       final completer = Completer<PaginatedArticles>();
@@ -244,7 +244,8 @@ void main() {
       await tester.pumpWidget(createTestWidget(repository: mockRepo));
       await tester.pump(); // Render first frame
 
-      expect(find.byType(AppLoader), findsOneWidget);
+      expect(find.byType(ShimmerLoadingFeed), findsOneWidget);
+      expect(find.byType(ArticleCardSkeleton), findsWidgets);
       expect(find.text(AppStrings.loadingArticles), findsOneWidget);
 
       // Complete to avoid leaking pending futures
@@ -782,40 +783,47 @@ void main() {
       },
     );
 
-    testWidgets('Displays AppLoader when initial Blog request is in-flight', (
-      WidgetTester tester,
-    ) async {
-      final blogCompleter = Completer<PaginatedBlogs>();
-      final mockBlogRepo = MockBlogRepository(completer: blogCompleter);
-      final mockArticleRepo = MockArticleRepository(
-        articlesToReturn: sampleArticles,
-      );
+    testWidgets(
+      'Displays skeleton cards when initial Blog request is in-flight',
+      (WidgetTester tester) async {
+        final blogCompleter = Completer<PaginatedBlogs>();
+        final mockBlogRepo = MockBlogRepository(completer: blogCompleter);
+        final mockArticleRepo = MockArticleRepository(
+          articlesToReturn: sampleArticles,
+        );
 
-      await tester.pumpWidget(
-        createTestWidget(
-          repository: mockArticleRepo,
-          blogRepository: mockBlogRepo,
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
+        await tester.pumpWidget(
+          createTestWidget(
+            repository: mockArticleRepo,
+            blogRepository: mockBlogRepo,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
-      // Switch to Blogs via filter sheet
-      await tester.tap(find.byKey(const ValueKey('search_filter_button')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
-      await tester.pump(); // Render initial loading frame
+        // Switch to Blogs via filter sheet
+        await tester.tap(find.byKey(const ValueKey('search_filter_button')));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('filter_option_blogs')));
+        await tester.pump(); // Render initial loading frame
 
-      expect(find.byType(AppLoader), findsOneWidget);
-      expect(find.text(AppStrings.loadingBlogs), findsOneWidget);
+        expect(find.byType(ShimmerLoadingFeed), findsOneWidget);
+        expect(find.byType(ArticleCardSkeleton), findsWidgets);
+        expect(find.text(AppStrings.loadingBlogs), findsOneWidget);
 
-      // Complete to avoid pending timer/future leaks
-      blogCompleter.complete(
-        const PaginatedBlogs(count: 0, next: null, previous: null, results: []),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-    });
+        // Complete to avoid pending timer/future leaks
+        blogCompleter.complete(
+          const PaginatedBlogs(
+            count: 0,
+            next: null,
+            previous: null,
+            results: [],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
 
     testWidgets('Displays AppEmptyView when Blog feed is empty', (
       WidgetTester tester,

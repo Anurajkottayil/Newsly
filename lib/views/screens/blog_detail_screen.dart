@@ -9,12 +9,14 @@ import '../../core/constants/app_strings.dart';
 import '../../core/errors/api_exception.dart';
 import '../../models/blog_model.dart';
 import '../../repositories/blog_repository.dart';
+import '../../services/share_service.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_empty_view.dart';
 import '../../shared/widgets/app_error_view.dart';
 import '../../shared/widgets/app_loader.dart';
 import '../../viewmodels/blog_view_model.dart';
-import '../widgets/responsive_layout.dart';
+import '../../viewmodels/bookmark_view_model.dart';
+import '../widgets/detail_more_options_sheet.dart';
 
 /// Blog Detail Screen with Gmail-like swipe navigation and pagination.
 ///
@@ -30,6 +32,7 @@ class BlogDetailScreen extends StatefulWidget {
   final int? initialIndex;
   final String? heroTag;
   final VoidCallback? onBack;
+  final ShareService? shareService;
 
   const BlogDetailScreen({
     super.key,
@@ -38,6 +41,7 @@ class BlogDetailScreen extends StatefulWidget {
     this.initialIndex,
     this.heroTag,
     this.onBack,
+    this.shareService,
   });
 
   @override
@@ -51,6 +55,7 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
   bool _controllerInitialized = false;
   int? _lastRequestedOffset;
   List<Blog>? _lastKnownBlogs;
+  final Set<int> _localBookmarks = <int>{};
 
   // Direct ID fetch state (when opened without a cached blog or list)
   Blog? _directFetchedBlog;
@@ -162,7 +167,14 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
       viewModel = null;
     }
 
-    final blogs = viewModel != null
+    BookmarkViewModel? bookmarkVm;
+    try {
+      bookmarkVm = Provider.of<BookmarkViewModel>(context, listen: true);
+    } catch (_) {
+      bookmarkVm = null;
+    }
+
+    final blogs = (viewModel != null && viewModel.blogs.isNotEmpty)
         ? viewModel.blogs
         : (widget.blog != null
               ? [widget.blog!]
@@ -300,11 +312,32 @@ class _BlogDetailScreenState extends State<BlogDetailScreen> {
               ? widget.heroTag
               : 'blog_hero_${blog.id}';
 
+          final isBookmarked = bookmarkVm != null
+              ? bookmarkVm.isBlogBookmarked(blog.id)
+              : _localBookmarks.contains(blog.id);
+
           pageChild = BlogDetailContent(
             blog: blog,
             heroTag: heroTag,
             onBack: widget.onBack,
             onRefresh: () => _handleBlogRefresh(blog.id),
+            isBookmarked: isBookmarked,
+            shareService: widget.shareService,
+            onToggleBookmark: () async {
+              if (bookmarkVm != null) {
+                return await bookmarkVm.toggleBlogBookmark(blog.id);
+              } else {
+                final wasSaved = _localBookmarks.contains(blog.id);
+                setState(() {
+                  if (wasSaved) {
+                    _localBookmarks.remove(blog.id);
+                  } else {
+                    _localBookmarks.add(blog.id);
+                  }
+                });
+                return !wasSaved;
+              }
+            },
           );
         }
 
@@ -461,6 +494,9 @@ class BlogDetailContent extends StatelessWidget {
   final String? heroTag;
   final VoidCallback? onBack;
   final VoidCallback? onRefresh;
+  final bool? isBookmarked;
+  final Future<bool> Function()? onToggleBookmark;
+  final ShareService? shareService;
 
   const BlogDetailContent({
     super.key,
@@ -468,6 +504,9 @@ class BlogDetailContent extends StatelessWidget {
     this.heroTag,
     this.onBack,
     this.onRefresh,
+    this.isBookmarked,
+    this.onToggleBookmark,
+    this.shareService,
   });
 
   String _formatDate(DateTime? dateTime) {
@@ -530,12 +569,53 @@ class BlogDetailContent extends StatelessWidget {
   }
 
   void _showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
       ),
+    );
+  }
+
+  Future<void> _onBookmarkTapped(
+    BuildContext context,
+    bool currentSavedState,
+    BookmarkViewModel? bookmarkVm,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final bool isNowBookmarked;
+    if (onToggleBookmark != null) {
+      isNowBookmarked = await onToggleBookmark!();
+    } else if (bookmarkVm != null) {
+      isNowBookmarked = await bookmarkVm.toggleBlogBookmark(blog.id);
+    } else {
+      isNowBookmarked = !currentSavedState;
+    }
+
+    messenger.clearSnackBars();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(
+          isNowBookmarked
+              ? AppStrings.bookmarkSaved
+              : AppStrings.bookmarkRemoved,
+        ),
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _onMoreOptionsTapped(BuildContext context) {
+    showDetailMoreOptionsSheet(
+      context: context,
+      title: blog.title,
+      url: blog.url,
+      isBlog: true,
+      onOpenOriginal: () => _launchBlogUrl(context),
+      shareService: shareService ?? const ShareServiceImpl(),
     );
   }
 
@@ -547,70 +627,135 @@ class BlogDetailContent extends StatelessWidget {
     final screenHeight = size.height;
     final isShortHeight = screenHeight < 500;
     final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
 
+    BookmarkViewModel? bookmarkVm;
+    try {
+      bookmarkVm = Provider.of<BookmarkViewModel>(context, listen: true);
+    } catch (_) {
+      bookmarkVm = null;
+    }
+    final effectiveIsBookmarked = bookmarkVm != null
+        ? bookmarkVm.isBlogBookmarked(blog.id)
+        : (isBookmarked ?? false);
+
+    final screenWidth = size.width;
+    final isTablet = screenWidth >= AppDimensions.tabletBreakpoint;
+
+    // Tablet-aware hero height: use a taller fraction and larger clamps on big screens.
     final minHeroHeight = isShortHeight
         ? (190.0 * textScale).clamp(180.0, 300.0)
+        : isTablet
+        ? (380.0 * textScale).clamp(380.0, 600.0)
         : (320.0 * textScale).clamp(320.0, 520.0);
     final maxHeroHeight = isShortHeight
         ? (280.0 * textScale).clamp(240.0, 380.0)
+        : isTablet
+        ? (560.0 * textScale).clamp(480.0, 680.0)
         : (440.0 * textScale).clamp(440.0, 600.0);
-    final targetFraction = isShortHeight ? 0.60 : 0.44;
+    final targetFraction = isShortHeight ? 0.60 : (isTablet ? 0.48 : 0.44);
     final heroHeight = (screenHeight * targetFraction).clamp(
       minHeroHeight,
       maxHeroHeight,
     );
 
-    final panelColor = isDark ? AppColors.cardDark : Colors.white;
+    // Responsive container width:
+    // - Phone (< 600) and standard tablet (600..1024) use full available width (0 outer gaps).
+    // - Very large tablets/desktop (> 1024) use a sensible max width of desktopBreakpoint (1024).
+    final contentMaxWidth = isTablet
+        ? (screenWidth > AppDimensions.desktopBreakpoint
+              ? AppDimensions.desktopBreakpoint
+              : double.infinity)
+        : double.infinity;
+
+    // Responsive horizontal padding:
+    // Keeps reading column comfortable while aligning headline, controls and content.
+    final double hPadding;
+    if (!isTablet) {
+      hPadding = AppDimensions.space20;
+    } else if (screenWidth <= 640) {
+      hPadding = AppDimensions.space24;
+    } else if (screenWidth <= 768) {
+      hPadding = AppDimensions.space32;
+    } else if (screenWidth <= 896) {
+      hPadding = AppDimensions.space40;
+    } else {
+      final effectiveWidth = screenWidth > AppDimensions.desktopBreakpoint
+          ? AppDimensions.desktopBreakpoint
+          : screenWidth;
+      hPadding = ((effectiveWidth - 760.0) / 2).clamp(
+        AppDimensions.space48,
+        140.0,
+      );
+    }
+
+    final panelColor = isDark ? AppColors.surfaceDark : Colors.white;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : Colors.white,
-      body: ResponsiveLayout(
-        maxWidth: 760,
-        mobile: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // 1. Upper Hero Section
-              _buildHeroSection(
-                context,
-                heroHeight,
-                isDark,
-                panelColor,
-                isShortHeight: isShortHeight,
-              ),
-
-              // 2. Main Content Panel
-              Container(
-                color: panelColor,
-                padding: const EdgeInsets.fromLTRB(
-                  AppDimensions.space20,
-                  AppDimensions.space8,
-                  AppDimensions.space20,
-                  AppDimensions.space32,
+      backgroundColor: panelColor,
+      body: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: contentMaxWidth),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 1. Upper Hero Section
+                _buildHeroSection(
+                  context,
+                  heroHeight,
+                  isDark,
+                  panelColor,
+                  effectiveIsBookmarked,
+                  bookmarkVm,
+                  isShortHeight: isShortHeight,
+                  horizontalPadding: hPadding,
+                  isTablet: isTablet,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Publisher / Author Row
-                    _buildPublisherRow(context, isDark),
 
-                    const SizedBox(height: AppDimensions.space20),
+                // 2. Main Content Panel — natural height, CTA follows content
+                Container(
+                  color: panelColor,
+                  padding: EdgeInsets.fromLTRB(
+                    hPadding,
+                    AppDimensions.space8,
+                    hPadding,
+                    AppDimensions.space20 + bottomInset,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Publisher / Author Row
+                      _buildPublisherRow(context, isDark),
 
-                    // Blog Summary
-                    _buildSummaryContent(isDark),
+                      const SizedBox(height: AppDimensions.space20),
 
-                    const SizedBox(height: AppDimensions.space32),
+                      // Blog Summary
+                      _buildSummaryContent(isDark),
 
-                    // Read Full Blog Post Button
-                    AppButton(
-                      label: AppStrings.readFullBlogPost,
-                      width: double.infinity,
-                      onPressed: () => _launchBlogUrl(context),
-                    ),
-                  ],
+                      const SizedBox(height: AppDimensions.space24),
+
+                      // Read Full Blog Post Button — immediately after content
+                      AppButton(
+                        label: AppStrings.readFullBlogPost,
+                        width: double.infinity,
+                        height: 50.0,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radiusMd,
+                        ),
+                        trailingIcon: const Icon(
+                          Icons.open_in_new_rounded,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                        onPressed: () => _launchBlogUrl(context),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -621,8 +766,12 @@ class BlogDetailContent extends StatelessWidget {
     BuildContext context,
     double height,
     bool isDark,
-    Color panelColor, {
+    Color panelColor,
+    bool isBookmarked,
+    BookmarkViewModel? bookmarkVm, {
     bool isShortHeight = false,
+    double horizontalPadding = AppDimensions.space20,
+    bool isTablet = false,
   }) {
     final effectiveTag = heroTag ?? 'blog_hero_${blog.id}';
 
@@ -694,7 +843,9 @@ class BlogDetailContent extends StatelessWidget {
               bottom: false,
               child: Padding(
                 padding: EdgeInsets.symmetric(
-                  horizontal: AppDimensions.space16,
+                  horizontal: isTablet
+                      ? horizontalPadding
+                      : AppDimensions.space16,
                   vertical: isShortHeight
                       ? AppDimensions.space4
                       : AppDimensions.space8,
@@ -727,20 +878,25 @@ class BlogDetailContent extends StatelessWidget {
                             onPressed: onRefresh!,
                           ),
                         _buildCircleIconButton(
-                          icon: Icons.bookmark_border_rounded,
+                          icon: isBookmarked
+                              ? Icons.bookmark_rounded
+                              : Icons.bookmark_border_rounded,
+                          iconColor: isBookmarked
+                              ? const Color(0xFFFBBF24)
+                              : Colors.white,
                           tooltip: AppStrings.bookmarks,
                           iconSize: 18,
-                          onPressed: () {
-                            _showSnackBar(context, 'Bookmark saved');
-                          },
+                          onPressed: () => _onBookmarkTapped(
+                            context,
+                            isBookmarked,
+                            bookmarkVm,
+                          ),
                         ),
                         _buildCircleIconButton(
                           icon: Icons.more_horiz_rounded,
                           tooltip: AppStrings.moreOptions,
                           iconSize: 18,
-                          onPressed: () {
-                            _showSnackBar(context, 'Sharing: ${blog.title}');
-                          },
+                          onPressed: () => _onMoreOptionsTapped(context),
                         ),
                       ],
                     ),
@@ -752,8 +908,8 @@ class BlogDetailContent extends StatelessWidget {
 
           // Bottom Content Overlay
           Positioned(
-            left: AppDimensions.space20,
-            right: AppDimensions.space20,
+            left: horizontalPadding,
+            right: horizontalPadding,
             bottom: isShortHeight
                 ? AppDimensions.space16
                 : AppDimensions.space24,
@@ -918,6 +1074,7 @@ class BlogDetailContent extends StatelessWidget {
     required String tooltip,
     required double iconSize,
     required VoidCallback onPressed,
+    Color iconColor = Colors.white,
   }) {
     return IconButton(
       icon: Container(
@@ -928,7 +1085,7 @@ class BlogDetailContent extends StatelessWidget {
           shape: BoxShape.circle,
         ),
         alignment: Alignment.center,
-        child: Icon(icon, size: iconSize, color: Colors.white),
+        child: Icon(icon, size: iconSize, color: iconColor),
       ),
       tooltip: tooltip,
       constraints: const BoxConstraints(minWidth: 48, minHeight: 48),

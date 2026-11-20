@@ -36,6 +36,15 @@ class AppStrings {
   static const String retryLoadingMore = 'Failed to load more. Tap to retry.';
   static const String back = 'Back';
   static const String share = 'Share';
+  static const String shareArticle = 'Share article';
+  static const String shareBlog = 'Share blog post';
+  static const String copyLink = 'Copy link';
+  static const String linkCopied = 'Link copied to clipboard';
+  static const String noUrlToCopy = 'No link available to copy';
+  static const String bookmarkSaved = 'Bookmark saved';
+  static const String bookmarkRemoved = 'Bookmark removed';
+  static const String openOriginalArticle = 'Open original article';
+  static const String openOriginalBlog = 'Open original blog post';
   static const String moreOptions = 'More options';
   static const String more = 'More options';
   static const String refresh = 'Refresh';

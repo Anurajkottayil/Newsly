@@ -11,8 +11,10 @@ class AppButton extends StatelessWidget {
   final AppButtonVariant variant;
   final bool isLoading;
   final Widget? icon;
+  final Widget? trailingIcon;
   final double? width;
   final double height;
+  final BorderRadius? borderRadius;
 
   const AppButton({
     super.key,
@@ -21,8 +23,10 @@ class AppButton extends StatelessWidget {
     this.variant = AppButtonVariant.primary,
     this.isLoading = false,
     this.icon,
+    this.trailingIcon,
     this.width,
     this.height = AppDimensions.buttonHeight,
+    this.borderRadius,
   });
 
   const AppButton.outlined({
@@ -31,8 +35,10 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.trailingIcon,
     this.width,
     this.height = AppDimensions.buttonHeight,
+    this.borderRadius,
   }) : variant = AppButtonVariant.outlined;
 
   const AppButton.text({
@@ -41,8 +47,10 @@ class AppButton extends StatelessWidget {
     required this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.trailingIcon,
     this.width,
     this.height = AppDimensions.buttonHeightSmall,
+    this.borderRadius,
   }) : variant = AppButtonVariant.text;
 
   @override
@@ -83,8 +91,15 @@ class AppButton extends StatelessWidget {
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
           ),
         ),
+        if (trailingIcon != null) ...[
+          const SizedBox(width: AppDimensions.space8),
+          trailingIcon!,
+        ],
       ],
     );
+
+    final effectiveRadius =
+        borderRadius ?? BorderRadius.circular(AppDimensions.radiusSm);
 
     Widget button;
     switch (variant) {
@@ -98,10 +113,7 @@ class AppButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(
               horizontal: AppDimensions.space16,
             ),
-
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: effectiveRadius),
           ),
           child: content,
         );
@@ -117,10 +129,7 @@ class AppButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(
               horizontal: AppDimensions.space16,
             ),
-
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: effectiveRadius),
           ),
           child: content,
         );
@@ -136,10 +145,7 @@ class AppButton extends StatelessWidget {
             padding: const EdgeInsets.symmetric(
               horizontal: AppDimensions.space16,
             ),
-
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: effectiveRadius),
           ),
           child: content,
         );
@@ -151,9 +157,7 @@ class AppButton extends StatelessWidget {
           style: TextButton.styleFrom(
             foregroundColor: colorScheme.primary,
             minimumSize: Size(width ?? 0, height),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppDimensions.radiusSm),
-            ),
+            shape: RoundedRectangleBorder(borderRadius: effectiveRadius),
           ),
           child: content,
         );
