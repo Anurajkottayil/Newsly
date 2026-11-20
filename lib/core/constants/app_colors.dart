@@ -42,10 +42,6 @@ class AppColors {
   // Feedback Colors
   static const Color error = Color(0xFFDC2626);
   static const Color errorLight = Color(0xFFFEE2E2);
-  static const Color success = Color(0xFF16A34A);
-  static const Color successLight = Color(0xFFDCFCE7);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color warningLight = Color(0xFFFEF3C7);
 
   // Shimmer & Placeholder Colors
   static const Color shimmerBaseLight = Color(0xFFE2E8F0);

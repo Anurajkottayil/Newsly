@@ -239,48 +239,27 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           mobile: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Top Bar with Back Icon
-              _buildTopBar(context, isDark),
-
-              // 2. Discover Title & Subtitle
+              SizedBox(height: 30),
+              // 1. Discover Title & Subtitle
               _buildHeader(context, isDark),
 
               const SizedBox(height: AppDimensions.space16),
 
-              // 3. Search Bar
+              // 2. Search Bar
               _buildSearchBar(context, isDark),
 
               const SizedBox(height: AppDimensions.space16),
 
-              // 5. Horizontal Category Chips
+              // 3. Horizontal Category Chips
               _buildCategoryChips(context, isDark),
 
               const SizedBox(height: AppDimensions.space12),
 
-              // 6. News List / State Views
+              // 4. News List / State Views
               Expanded(child: _buildBody(context, isDark)),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar(BuildContext context, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: AppDimensions.space12,
-        top: AppDimensions.space8,
-      ),
-      child: IconButton(
-        icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
-        tooltip: AppStrings.back,
-        color: isDark ? AppColors.textPrimaryDark : AppColors.textPrimaryLight,
-        onPressed: () {
-          if (Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-          }
-        },
       ),
     );
   }
@@ -294,15 +273,20 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
         : const Color(0xFF94A3B8);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.space20),
+      padding: const EdgeInsets.fromLTRB(
+        AppDimensions.space20,
+        AppDimensions.space16,
+        AppDimensions.space20,
+        0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             AppStrings.discover,
             style: TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
+              fontSize: 40,
+              fontWeight: FontWeight.w600,
               color: titleColor,
               letterSpacing: -0.5,
               height: 1.15,
@@ -658,15 +642,25 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
 
   Widget _buildBody(BuildContext context, bool isDark) {
     if (_contentType == _ContentType.articles) {
-      return _buildArticleBody(context, isDark);
+      return Consumer<ArticleViewModel>(
+        builder: (context, viewModel, _) {
+          return _buildArticleBody(context, viewModel, isDark);
+        },
+      );
     } else {
-      return _buildBlogBody(context, isDark);
+      return Consumer<BlogViewModel>(
+        builder: (context, viewModel, _) {
+          return _buildBlogBody(context, viewModel, isDark);
+        },
+      );
     }
   }
 
-  Widget _buildArticleBody(BuildContext context, bool isDark) {
-    final viewModel = context.watch<ArticleViewModel>();
-
+  Widget _buildArticleBody(
+    BuildContext context,
+    ArticleViewModel viewModel,
+    bool isDark,
+  ) {
     // 1. Shimmer Loading State
     // Shows shimmer skeletons during initial load, keyword changes, or category filter changes.
     // Preserves existing cards during pull-to-refresh on already populated feeds.
@@ -828,9 +822,11 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
     );
   }
 
-  Widget _buildBlogBody(BuildContext context, bool isDark) {
-    final viewModel = context.watch<BlogViewModel>();
-
+  Widget _buildBlogBody(
+    BuildContext context,
+    BlogViewModel viewModel,
+    bool isDark,
+  ) {
     // 1. Shimmer Loading State
     // Shows shimmer skeletons during initial load, keyword changes, or category filter changes.
     // Preserves existing cards during pull-to-refresh on already populated feeds.

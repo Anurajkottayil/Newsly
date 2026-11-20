@@ -24,19 +24,8 @@ class AppDimensions {
   static const double radiusXl = 24.0;
   static const double radiusFull = 999.0;
 
-  // Elevation
-  static const double elevationLow = 1.0;
-  static const double elevationMedium = 3.0;
-  static const double elevationHigh = 6.0;
-
   // Image & Card Sizes
-  static const double cardImageHeight = 200.0;
-  static const double cardImageHeightCompact = 120.0;
-  static const double thumbnailSize = 80.0;
-  static const double iconSizeSmall = 16.0;
   static const double iconSizeMedium = 20.0;
-  static const double iconSizeLarge = 24.0;
-  static const double iconSizeXLarge = 32.0;
   static const double iconSizeEmptyState = 64.0;
 
   // Button Sizes

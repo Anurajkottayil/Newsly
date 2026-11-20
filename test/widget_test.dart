@@ -29,8 +29,13 @@ void main() {
   testWidgets('NewslyApp launches DiscoverScreen smoke test', (
     WidgetTester tester,
   ) async {
-    // Build NewslyApp with injected mock repository
-    await tester.pumpWidget(NewslyApp(articleRepository: MockArticleRepo()));
+    // Build NewslyApp with injected mock repository and showSplash: false for smoke test
+    await tester.pumpWidget(
+      NewslyApp(
+        articleRepository: MockArticleRepo(),
+        showSplash: false,
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
