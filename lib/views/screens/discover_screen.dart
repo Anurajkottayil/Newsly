@@ -305,7 +305,7 @@ class _DiscoverScreenState extends State<DiscoverScreen> {
           mobile: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
               // 1. Discover Title & Subtitle
               _buildHeader(context, isDark),
 
