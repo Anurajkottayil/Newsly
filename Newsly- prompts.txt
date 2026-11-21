@@ -1,0 +1,4630 @@
+//----------- initial prompt ------------------
+
+# ROLE
+Act as a Senior Flutter Developer and Mobile Application Architect.
+
+You are working on **Newsly**, a professional Flutter News Application for Android and iOS.
+
+Your task is to inspect the existing Flutter project and establish a clean, scalable, production-ready foundation.
+
+## 1. IMPORTANT PROJECT REQUIREMENTS
+
+Follow these requirements strictly throughout development:
+
+- Architecture: MVVM (Model, View, ViewModel, Repository).
+- State Management: Provider + ChangeNotifier.
+- Networking: Dio.
+- Image caching: cached_network_image.
+- Models: Null-safe Dart models with fromJson().
+- Responsive UI: Support phones, tablets and iPads.
+- Theme: Light and dark theme support.
+- Code quality: Follow DRY principles and Flutter best practices.
+
+Do not use GetX, Riverpod, Bloc or Cubit. Provider + ChangeNotifier is the confirmed state-management choice.
+
+## 2. FIRST: INSPECT THE EXISTING PROJECT
+
+Before modifying anything:
+
+1. Inspect the complete existing project structure.
+2. Read pubspec.yaml, main.dart, analysis_options.yaml and existing test files.
+3. Inspect the current Flutter and Dart SDK constraints.
+4. Check existing dependencies and configuration.
+5. Check the existing Git configuration and .gitignore.
+6. Identify any existing implementation that should be preserved.
+
+Do not recreate the Flutter project.
+Do not delete existing platform folders.
+Do not overwrite configuration files without checking their current contents.
+
+## 3. CREATE THE FOLLOWING FOLDER STRUCTURE
+
+Organize the application under lib/:
+
+lib/
+  core/
+    constants/
+      app_colors.dart
+      app_strings.dart
+      app_dimensions.dart
+      api_endpoints.dart
+      app_constants.dart
+    theme/
+      app_theme.dart
+    network/
+      api_client.dart
+    errors/
+      api_exception.dart
+
+  shared/
+    widgets/
+      article_card.dart
+      app_loader.dart
+      app_error_view.dart
+      app_empty_view.dart
+      app_button.dart
+
+  models/
+    article_model.dart
+    blog_model.dart
+
+  repositories/
+    article_repository.dart
+    blog_repository.dart
+
+  viewmodels/
+    article_view_model.dart
+    blog_view_model.dart
+
+  views/
+    screens/
+    widgets/
+
+  main.dart
+
+Create these directories and files where appropriate. Do not add unnecessary abstraction or boilerplate.
+
+## 4. DEPENDENCIES
+
+Configure the following packages using versions compatible with the project's Flutter SDK:
+
+- provider
+- dio
+- cached_network_image
+
+Use Flutter's built-in Material components wherever possible.
+
+Do not add unnecessary packages. Keep existing useful dependencies.
+
+Run flutter pub get after updating dependencies.
+
+## 5. SHARED CONSTANTS AND THEME
+
+Implement centralized resources:
+
+app_colors.dart:
+- Primary color
+- Secondary color
+- Background colors
+- Surface colors
+- Text colors
+- Error and success colors
+
+app_strings.dart:
+- Application name
+- Common labels
+- Loading messages
+- Error messages
+- Empty-state messages
+- Retry labels
+
+app_dimensions.dart:
+- Common padding
+- Margin and spacing
+- Card radius
+- Button radius
+- Image dimensions
+
+api_endpoints.dart:
+- Base API URL
+- Articles endpoint
+- Blogs endpoint
+- Article details endpoint
+- Blog details endpoint
+
+app_constants.dart:
+- Pagination defaults
+- Search debounce duration
+- Other genuinely shared configuration values
+
+app_theme.dart:
+- Centralized light theme
+- Centralized dark theme
+- Consistent typography
+- Common component themes
+
+Ensure all reusable values are referenced from these shared files instead of repeating hardcoded values throughout the application.
+
+## 6. NETWORK FOUNDATION
+
+Create one shared Dio-based API client.
+
+Requirements:
+- Centralized base URL and configuration.
+- Connection and receive timeouts.
+- Common GET request handling.
+- Proper HTTP error handling.
+- Typed API exceptions.
+- Handle connection errors and timeouts.
+- Do not expose sensitive information in logs.
+- Keep API communication separate from UI and ViewModels.
+
+Base URL:
+https://api.spaceflightnewsapi.net/v4
+
+Endpoints:
+- /articles/
+- /articles/{id}/
+- /blogs/
+- /blogs/{id}/
+
+Do not assume unverified response fields or API query parameters. Verify the API documentation before implementing endpoint-specific parsing.
+
+## 7. PROVIDER + MVVM FOUNDATION
+
+Prepare the project for this architecture:
+
+View:
+Displays UI and listens to ViewModel changes.
+
+ViewModel:
+Uses ChangeNotifier and manages loading, success, empty and error states.
+
+Repository:
+Handles data retrieval and separates API logic from ViewModel logic.
+
+Model:
+Contains strongly typed, null-safe data structures.
+
+Do not place API calls directly inside widgets.
+
+## 8. DRY REQUIREMENTS
+
+Prepare reusable widgets for:
+- Article card
+- Loading indicator
+- Error view with retry support
+- Empty state
+- Common button
+
+Reusable widgets must be designed to support future reuse in both Articles and Blogs screens.
+
+Avoid creating duplicate widgets for the same purpose.
+
+## 9. IMPORTANT DEVELOPMENT RULES
+
+- Keep code simple, readable and maintainable.
+- Follow effective Dart naming conventions.
+- Use const constructors wherever possible.
+- Avoid unnecessary StatefulWidgets.
+- Do not create excessive abstractions.
+- Do not implement unrelated features.
+- Do not redesign or modify platform configurations unnecessarily.
+- Follow flutter_lints.
+- Keep View, ViewModel, Repository and Model responsibilities separate.
+- Make sure generated code compiles.
+
+## 10. VALIDATION
+
+After implementation:
+
+1. Run flutter pub get.
+2. Run dart format .
+3. Run flutter analyze.
+4. Fix errors introduced by your changes.
+5. Verify that the application launches.
+6. Check that light and dark themes are configured.
+7. Check that all shared files are connected correctly.
+8. Report any remaining warnings or issues honestly.
+
+## 11. README
+
+Update README.md with:
+- Project introduction.
+- Technology stack.
+- MVVM architecture explanation.
+- Why Provider + ChangeNotifier was selected.
+- Folder structure.
+- Setup instructions.
+- API information.
+
+Do not claim features are completed if they have not been implemented.
+
+## 12. FINAL REPORT
+
+When finished, report:
+
+1. Existing project structure inspected.
+2. Files and folders created.
+3. Dependencies added.
+4. Architecture and state management configuration.
+5. Shared resources implemented.
+6. API client implementation.
+7. Validation commands and their results.
+8. Any remaining issues.
+
+IMPORTANT: Complete only this foundation phase. Do not build the full Newsly UI, search, pagination, swipe navigation or article details yet. Those will be implemented in subsequent phases.
+
+
+//------------------------ prompt 2 -------------
+
+# TASK: NEWSLY — PHASE 2: API FOUNDATION VERIFICATION
+
+Act as a Senior Flutter Developer.
+
+The Newsly project already has an MVVM architecture using Provider + ChangeNotifier, Dio, Article and Blog models, repositories and ViewModels.
+
+Before implementing any UI features, thoroughly inspect and verify the existing API implementation.
+
+## Important rules
+
+- Read the existing code before making changes.
+- Do not recreate existing files unnecessarily.
+- Preserve Provider + ChangeNotifier and MVVM.
+- Do not introduce another state-management package.
+- Do not make unrelated UI changes.
+- Do not assume API response fields without verification.
+
+## 1. Verify API endpoints
+
+Base URL:
+https://api.spaceflightnewsapi.net/v4
+
+Verify these endpoints:
+
+- GET /articles/
+- GET /articles/{id}/
+- GET /blogs/
+- GET /blogs/{id}/
+
+Use the official API documentation or actual API responses where network access is available.
+
+If network access fails, clearly report that verification is pending. Do not invent response schemas.
+
+## 2. Inspect existing models
+
+Review:
+- article_model.dart
+- blog_model.dart
+
+Verify:
+- Null safety.
+- Correct JSON field names.
+- Nullable fields.
+- Nested objects and lists.
+- Missing or null image URLs.
+- Date parsing.
+- Safe handling of incomplete API responses.
+
+Fix any mismatches.
+
+## 3. Inspect repositories
+
+Review:
+- article_repository.dart
+- blog_repository.dart
+
+Ensure:
+- API requests go through the shared Dio API client.
+- Pagination is handled correctly.
+- Query parameters are passed correctly.
+- HTTP failures become typed API exceptions.
+- No networking logic exists in UI widgets.
+
+## 4. Inspect ViewModels
+
+Review:
+- article_view_model.dart
+- blog_view_model.dart
+
+Verify:
+- Loading state.
+- Successful response.
+- Empty response.
+- Error state.
+- Pagination.
+- Prevention of duplicate pagination requests.
+- Prevention of duplicate records.
+- Search reset behavior.
+- Proper disposal of resources.
+
+Do not claim functionality is complete unless implemented and tested.
+
+## 5. Add or update tests
+
+Create tests for:
+- Article JSON parsing.
+- Blog JSON parsing.
+- Missing/null fields.
+- Repository success and failure.
+- Pagination behavior.
+- Duplicate request prevention.
+- ViewModel loading, empty and error states.
+
+Use mocked responses instead of depending on live internet access in automated tests.
+
+## 6. Validation
+
+Run:
+- flutter pub get
+- dart format .
+- flutter analyze
+- flutter test
+
+Report actual command results.
+
+## 7. Final report
+
+Explain:
+1. Which API endpoints were verified.
+2. Which JSON structures were confirmed.
+3. Any model corrections.
+4. Repository and ViewModel corrections.
+5. Tests added and their results.
+6. Remaining limitations.
+
+Do not implement the home screen or other UI features in this task.
+
+//------------------- phase 3 implementation -----------
+
+
+# NEWSLY — PHASE 3: DISCOVER / NEWS LIST SCREEN
+
+Act as a Senior Flutter UI Developer with strong attention to pixel-level design accuracy.
+
+Implement the Newsly Discover screen using the existing project architecture.
+
+## 1. VISUAL SOURCE OF TRUTH — MANDATORY
+
+Open and inspect the original project brief:
+
+Simple News App Flutter.pdf
+
+The List Screen reference screenshot is on PDF page 2.
+
+Reproduce that screenshot as closely as possible.
+
+Do not independently redesign the screen.
+Do not substitute a generic news application design.
+Do not introduce unrelated UI elements.
+
+Match:
+- White background.
+- Dark navy Discover heading.
+- Small subtitle.
+- Rounded light-gray search bar.
+- Search and filter icons.
+- Horizontal category chips.
+- Bright blue selected category.
+- Compact vertically scrolling news list.
+- Rounded thumbnail on the left.
+- News category/source and title on the right.
+- Muted metadata.
+- Original spacing, typography, proportions and visual hierarchy.
+
+Use the PDF screenshot as the primary reference throughout implementation.
+
+## 2. ARCHITECTURE
+
+Use the existing project implementation:
+
+- MVVM.
+- Provider + ChangeNotifier.
+- ArticleViewModel.
+- ArticleRepository.
+- Article model.
+- Shared API client using Dio.
+
+Do not put API calls or business logic inside widgets.
+
+Inspect existing files before changing them.
+
+## 3. FUNCTIONAL REQUIREMENTS
+
+Implement:
+
+A. Initial article loading
+- Fetch articles from the existing ArticleRepository.
+- Display a loading indicator.
+- Display articles after a successful response.
+- Display an empty state if there are no articles.
+- Display an error state with retry if the request fails.
+
+B. Search
+- Search articles by title and summary.
+- Use the API's documented `search` query parameter for combined search.
+- Add a debounce using the existing shared constant.
+- Avoid unnecessary API requests.
+- Clear search should reload the normal article feed.
+- Show an appropriate empty state when there are no search results.
+
+C. Category chips
+- Reproduce the visual category-chip design.
+- The API does not supply the reference categories.
+- Do not invent article categories or claim that a category filter works if it is not backed by actual data.
+- For this initial implementation, use a safe visual adaptation such as All and supported content/source filters only when their behavior is implemented and verified.
+
+D. Pagination
+- Load more articles when the user approaches the bottom of the list.
+- Use the existing ViewModel pagination logic.
+- Prevent duplicate requests.
+- Show a loading footer.
+- Show a retry footer if pagination fails.
+
+E. Pull to refresh
+- Implement pull-to-refresh.
+- Use the existing ViewModel refresh method.
+- Preserve proper loading and error behavior.
+
+## 4. REUSABILITY
+
+Use the existing:
+- ArticleCard.
+- AppLoader.
+- AppErrorView.
+- AppEmptyView.
+- AppButton.
+- AppColors.
+- AppStrings.
+- AppDimensions.
+- AppTheme.
+
+Do not duplicate these components.
+
+If the existing shared ArticleCard does not match the PDF, update it carefully while preserving its reuse for Blogs.
+
+## 5. RESPONSIVE DESIGN
+
+Phone:
+- Single-column vertical news list.
+- Preserve the reference screenshot's proportions.
+
+Tablet/iPad:
+- Adapt the layout appropriately.
+- Maintain the same design language, colors, typography and spacing.
+- Avoid stretching phone-sized cards across the entire tablet width.
+
+Use LayoutBuilder or MediaQuery.
+
+## 6. UI QUALITY
+
+- Use CachedNetworkImage for thumbnails.
+- Include image placeholders and error widgets.
+- Handle missing images.
+- Respect text scaling.
+- Support light and dark themes without compromising the light-mode reference design.
+- Avoid unnecessary StatefulWidgets.
+- Dispose controllers and debounce resources correctly.
+
+## 7. TESTING
+
+Add or update tests for:
+- Successful article loading.
+- Loading, empty and error states.
+- Search input and debounce.
+- Search result handling.
+- Pagination trigger.
+- Pull-to-refresh.
+- Retry behavior.
+- Missing article images.
+
+Use mocked repositories or API clients. Do not make automated tests dependent on live internet access.
+
+## 8. VALIDATION
+
+Run:
+- dart format .
+- flutter analyze
+- flutter test
+
+Fix all errors introduced by the implementation.
+
+## 9. FINAL REPORT
+
+Report:
+1. Screens and widgets implemented.
+2. Existing files modified.
+3. API/ViewModel integration.
+4. Search and pagination behavior.
+5. Responsive behavior.
+6. Test results.
+7. Remaining issues.
+
+Do not implement the Article Detail screen in this phase. We will implement it separately using the second PDF reference screenshot.
+
+//------------ phase 4 verification ---------------
+
+# NEWSLY — PHASE 4: ARTICLE DETAIL & SWIPE NAVIGATION VERIFICATION
+
+Act as a Senior Flutter Developer and Software Architect.
+
+We have completed Phase 1 (Foundation), Phase 2 (API Integration) and Phase 3 (Discover Screen).
+
+Now we are preparing for Phase 4, which covers:
+
+1. Article Detail Screen.
+2. Gmail-like horizontal swipe navigation between news articles.
+3. Pagination integration when the user reaches the end of the currently loaded article list.
+
+**IMPORTANT: This is an inspection and verification task only. Do not implement or modify anything yet.**
+
+## 1. Mandatory project constraints
+
+- Project root: `D:\Newsly`
+- Framework: Flutter.
+- Architecture: MVVM.
+- State management: Provider + ChangeNotifier.
+- API client: Dio.
+- Existing ArticleModel, ArticleRepository and ArticleViewModel should be reused.
+- Follow the existing project folder structure and naming conventions.
+- Reuse existing shared widgets, colors, dimensions, strings and theme.
+- Do not introduce GetX, Riverpod, Bloc or another state-management solution.
+- Do not redesign existing screens.
+- Preserve the existing Discover Screen.
+
+## 2. Article Detail Screen verification
+
+Inspect the entire `lib` directory and identify whether an Article Detail Screen already exists.
+
+Check:
+
+- Detail screen implementation.
+- Navigation from Discover article cards to the detail screen.
+- Article data passed from Discover to detail.
+- Hero image handling.
+- Image loading, error and placeholder states.
+- Gradient overlay on the hero image.
+- Back button.
+- Bookmark and more controls.
+- Category pill, article title and metadata.
+- Source/publisher information.
+- Summary content.
+- Read full article button.
+- Opening the original article URL externally.
+- Responsive behaviour.
+- Dark mode and text scaling.
+
+Compare the existing implementation with page 3 of `Simple News App Flutter.pdf`.
+
+The screenshot on page 3 is the visual source of truth. Do not substitute a generic news detail design.
+
+## 3. Mandatory Gmail-like swipe navigation verification
+
+This is a critical feature of Phase 4.
+
+Reference video:
+https://drive.google.com/file/d/1FBMkSuNk334VBTzj0gHMwtYZOEYxe43m/view
+
+Inspect the reference video if accessible. Otherwise, report that it could not be accessed. Do not guess its animation details.
+
+Required behaviour:
+
+- Swipe LEFT to display the PREVIOUS news article.
+- Swipe RIGHT to display the NEXT news article.
+- Navigation must happen inside the Article Detail experience.
+- The current article should be identified by its index in the loaded article list.
+- Article navigation should preserve the correct order of the Discover list.
+
+Inspect whether the project already implements this behaviour.
+
+Check:
+
+1. Whether PageView or another suitable horizontal navigation mechanism exists.
+2. Whether the current article index is maintained correctly.
+3. Whether the detail screen receives the loaded article list.
+4. Whether previous and next navigation work.
+5. Whether the detail content updates correctly when the article changes.
+6. Whether repeated swipes can trigger duplicate navigation or API requests.
+7. Whether navigation handles the first article and last loaded article correctly.
+
+## 4. Pagination integration at the end of the loaded list
+
+Example: The app has loaded 10 articles.
+
+When the user opens article 10 and swipes RIGHT:
+
+1. Detect that the current article is the last loaded article.
+2. Trigger the existing ArticleViewModel.loadMore() functionality.
+3. Show an appropriate loading state.
+4. Append newly fetched articles without duplicating existing articles.
+5. Continue navigation to the next article when it becomes available.
+
+Verify these scenarios:
+
+- More articles are available.
+- No more articles are available.
+- Pagination is already in progress.
+- Pagination fails.
+- User retries after failure.
+- Multiple swipes happen while pagination is running.
+- The next page returns duplicate article IDs.
+- Search is active while navigating.
+- The current article index remains valid after new data is appended.
+
+Do not modify pagination logic during this audit.
+
+## 5. ViewModel and repository verification
+
+Inspect:
+
+- `article_view_model.dart`
+- `article_repository.dart`
+- `article_model.dart`
+- API client and pagination implementation.
+- Any existing detail-related ViewModels or controllers.
+
+Determine whether existing functionality can support detail navigation and pagination without introducing unnecessary new architecture.
+
+Identify any missing methods or state required for Phase 4.
+
+## 6. Testing verification
+
+Inspect existing tests and determine whether they cover:
+
+- Article Detail Screen rendering.
+- Navigation from Discover to detail.
+- Correct article selection.
+- Swipe left and right.
+- First and last article boundaries.
+- Loading the next page at the end of the list.
+- Pagination loading state.
+- Pagination failure and retry.
+- Duplicate article prevention.
+- Correct navigation after pagination completes.
+
+Run:
+
+```bash
+flutter pub get
+dart format --output=none --set-exit-if-changed .
+flutter analyze
+flutter test
+```
+
+Report actual results. Do not claim tests passed unless they were executed successfully.
+
+## 7. Dependencies verification
+
+Check whether the project already includes the packages needed for:
+
+- External URL launching.
+- Image loading and caching.
+- Any other functionality required by the existing implementation.
+
+Do not add or remove dependencies.
+
+## 8. Git verification
+
+Inspect:
+
+- Current branch.
+- Working tree status.
+- Uncommitted changes.
+- Existing commits.
+
+Do not commit, push, reset or modify Git history.
+
+## 9. Final audit report
+
+Provide a detailed report with the following sections:
+
+### A. Existing implementation
+
+List relevant files and explain what is already implemented.
+
+### B. Article Detail Screen status
+
+Classify each requirement as:
+
+- COMPLETED AND VERIFIED
+- IMPLEMENTED BUT NOT VERIFIED
+- PARTIALLY IMPLEMENTED
+- NOT IMPLEMENTED
+- BROKEN
+
+### C. Swipe Navigation status
+
+Use the same classifications. Explicitly verify the direction mapping:
+
+- Swipe LEFT → Previous article.
+- Swipe RIGHT → Next article.
+
+### D. Pagination integration status
+
+Explain exactly how the existing ArticleViewModel handles pagination and whether the detail screen can reuse it.
+
+### E. Test results
+
+Provide actual command outputs or concise results.
+
+### F. Missing functionality
+
+List every missing requirement with the relevant file path or explain why a new file is needed.
+
+### G. Recommended implementation sequence
+
+Suggest the smallest logical implementation steps based on the existing code.
+
+### H. Phase 4 readiness
+
+Conclude whether the project is ready for implementation and identify the first task to implement.
+
+**FINAL RESTRICTION: Do not edit, create, delete, format or refactor any project files. This task is strictly read-only verification. Wait for approval before starting implementation.**
+
+//------------------ phase 4 splited to 5 - phase 4.1 implementation ------------
+
+# NEWSLY — PHASE 4.1: DEPENDENCY & SHARED STRING SETUP
+
+Act as a Senior Flutter Developer.
+
+We are starting Phase 4 of the Newsly Flutter project.
+
+Project root: `D:\Newsly`
+
+This task is limited to dependency setup and shared string constants.
+
+## Mandatory project constraints
+
+- Continue using Provider + ChangeNotifier.
+- Preserve the existing MVVM architecture.
+- Reuse existing shared resources.
+- Follow existing naming conventions and code style.
+- Do not introduce another state-management package.
+- Do not redesign or modify the Discover Screen.
+- Do not implement the Article Detail Screen yet.
+- Do not implement swipe navigation yet.
+- Avoid unrelated refactoring.
+
+## Task 1: Add URL launching dependency
+
+Inspect the existing `pubspec.yaml`.
+
+Add the `url_launcher` package using a compatible stable version.
+
+Prefer Flutter's package-management command:
+
+```bash
+flutter pub add url_launcher
+```
+
+Do not manually guess or downgrade dependency versions.
+
+Run:
+
+```bash
+flutter pub get
+```
+
+Verify that the dependency resolves successfully.
+
+We will use this package in a later step to open `article.url` externally when the user taps "Read full article".
+
+## Task 2: Update shared strings
+
+Inspect:
+
+`lib/core/constants/app_strings.dart`
+
+Check whether the following strings already exist.
+
+Add only missing constants, following the existing naming and formatting conventions:
+
+- `readFullArticle` = `Read full article`
+- `trending` = `Trending`
+
+Do not create duplicate constants.
+
+Do not hardcode these strings elsewhere.
+
+## Task 3: Verification
+
+Run:
+
+```bash
+dart format lib/core/constants/app_strings.dart
+flutter analyze
+flutter test
+```
+
+Report the actual results.
+
+## Task 4: Git diff review
+
+Inspect:
+
+```bash
+git status
+git diff -- pubspec.yaml pubspec.lock lib/core/constants/app_strings.dart
+```
+
+Confirm that only the expected files were modified.
+
+Do not commit or push.
+
+## Final report
+
+Provide:
+
+1. Dependency added and resolved version.
+2. Shared strings added or already existing.
+3. Files modified.
+4. `flutter pub get` result.
+5. Formatting result.
+6. `flutter analyze` result.
+7. `flutter test` result, including total passed tests.
+8. Git diff summary.
+
+IMPORTANT:
+
+Do not create the Article Detail Screen in this task.
+
+Do not implement swipe navigation or pagination changes.
+
+Do not modify any unrelated files.
+
+Stop after completing Step 4.1 and wait for approval before proceeding to Step 4.2.
+
+//--------------- phase 4.2 ---------------------
+
+# NEWSLY — PHASE 4.2: ARTICLE DETAIL CONTENT SCREEN
+
+Act as a Senior Flutter UI Developer.
+
+Project: `D:\Newsly`
+
+Implement the Article Detail Content Screen using the existing project architecture.
+
+## 1. Mandatory instructions
+
+Before coding:
+- Inspect the existing Discover Screen and Article Card.
+- Inspect ArticleModel and existing shared widgets.
+- Inspect app theme, colors, dimensions and strings.
+- Inspect the original `Simple News App Flutter.pdf`, page 3.
+
+Use page 3 as the exact visual reference.
+
+Do not create a generic news detail screen or independently redesign the UI.
+
+Architecture constraints:
+- Flutter.
+- MVVM.
+- Provider + ChangeNotifier.
+- Existing ArticleModel.
+- Existing shared resources.
+- Existing CachedNetworkImage dependency.
+- Existing url_launcher dependency.
+
+Do not introduce another state-management solution.
+
+## 2. Create the detail content screen
+
+Create:
+
+`lib/views/screens/article_detail_screen.dart`
+
+For this step, implement a reusable detail screen that accepts an ArticleModel through its constructor.
+
+The screen should display the selected article's actual data.
+
+## 3. Match the reference design
+
+Reproduce the page 3 design:
+
+### Hero section
+- Large article image covering the upper portion of the screen.
+- Appropriate image cropping using BoxFit.cover.
+- Dark gradient overlay at the bottom for text readability.
+- Reuse the existing image-loading and fallback approach.
+- Rounded or overlapping lower content panel as shown in the reference.
+
+### Floating controls
+- Back button at the top-left.
+- Bookmark icon at the top-right.
+- More/options icon at the top-right.
+- Use suitable existing icons and styling.
+- Do not invent bookmark persistence or options functionality. If no implementation exists, keep these as visual controls without pretending they perform an action.
+
+### Article information on the hero
+- Category pill using the existing blue accent.
+- Article title in large bold white text.
+- Published date and available metadata.
+
+Use actual API fields. Do not fabricate an author, category or other information that the API does not provide.
+
+### Content panel
+- White or theme-appropriate rounded-top panel overlapping the hero image.
+- Publisher/source row using `article.newsSite`.
+- Verified indicator only if supported by existing data or the reference's visual treatment; do not claim actual publisher verification.
+- Article summary using `article.summary`.
+- Appropriate readable typography and spacing.
+
+### Read full article
+- Add the shared `AppButton`.
+- Use `AppStrings.readFullArticle`.
+- Open `article.url` externally using `url_launcher`.
+- Handle invalid or empty URLs safely.
+- Handle launch failure gracefully.
+- Do not crash if the URL cannot be opened.
+
+## 4. Responsive and accessibility requirements
+
+- Reuse ResponsiveLayout where appropriate.
+- Support different phone sizes and tablet widths.
+- Respect existing light/dark themes.
+- Avoid fixed heights that cause text overflow.
+- Support text scaling.
+- Avoid RenderFlex overflow.
+
+## 5. Code quality
+
+- Follow the existing folder structure.
+- Keep UI code readable and maintainable.
+- Extract a small private widget only when it genuinely improves readability.
+- Do not add unnecessary new architecture.
+- Do not duplicate existing shared components.
+- Use existing centralized colors, dimensions and strings wherever applicable.
+- Properly handle null and empty article fields.
+
+## 6. Scope restrictions
+
+Do NOT implement:
+- PageView.
+- Swipe navigation.
+- Previous/next article navigation.
+- End-of-list pagination.
+- Discover-to-detail navigation wiring.
+- New Article Detail ViewModel unless genuinely required (explain first).
+
+Those are separate upcoming tasks.
+
+Do not modify the existing Discover Screen.
+
+## 7. Tests
+
+Add appropriate widget tests for:
+- Detail screen renders article title.
+- Source/news site is displayed.
+- Summary is displayed.
+- Published date is displayed.
+- Missing image is handled.
+- Missing summary or source is handled.
+- Read full article control is displayed.
+
+Avoid tests that require launching a real external browser.
+
+## 8. Verification
+
+Run:
+
+```bash
+dart format lib test
+flutter analyze
+flutter test
+```
+
+Review:
+
+```bash
+git status
+git diff
+```
+
+Report all modified and created files.
+
+## 9. Final report
+
+Provide:
+1. Files created and modified.
+2. How the UI matches PDF page 3.
+3. How missing API fields are handled.
+4. How external URL launching works.
+5. Responsive and dark-mode handling.
+6. Widget tests added.
+7. Actual analyzer and test results.
+8. Any remaining differences from the reference design.
+
+Stop after Step 4.2. Do not proceed to swipe navigation or Discover integration until approval.
+
+//----------------phase 4.3 audit -------
+
+# NEWSLY — PHASE 4.3: READ-ONLY AUDIT
+## Gmail-like Swipe Navigation, Pagination & Detail Navigation
+
+Act as a Senior Flutter Developer. Inspect the existing Newsly Flutter project and prepare a detailed implementation plan for Phase 4.3.
+
+<escape>**STRICT RULE: READ-ONLY AUDIT ONLY. DO NOT MODIFY, CREATE, DELETE, OR FORMAT ANY FILES.**</escape>
+
+## 1. Inspect Existing Implementation
+
+Inspect these files and any directly related files:
+
+- `lib/views/screens/discover_screen.dart`
+- `lib/views/screens/article_detail_screen.dart`
+- `lib/viewmodels/article_view_model.dart`
+- `lib/repositories/article_repository.dart`
+- `lib/models/article_model.dart`
+- `lib/shared/widgets/article_card.dart`
+- `lib/core/network/api_client.dart`
+- Existing widget and ViewModel tests.
+
+Understand the current Provider + ChangeNotifier architecture, article loading, search, refresh, pagination, and detail rendering.
+
+## 2. Discover-to-Detail Navigation — IMPORTANT
+
+Currently, tapping an article card on the Discover screen does not navigate to the detail screen. The `onTap` callback was previously left as a placeholder for Phase 4.
+
+Inspect the current implementation and determine whether connecting Discover to Article Detail belongs in this Phase 4.3 scope.
+
+The intended final workflow is:
+
+1. User opens Discover.
+2. User taps an article card.
+3. The Article Detail screen opens for that selected article.
+4. User navigates between articles using horizontal swipes.
+5. User presses Back to return to Discover.
+
+If this navigation is part of Phase 4.3, include it in the implementation plan. Do not ignore the existing placeholder or assume navigation already works.
+
+## 3. Required Swipe Behaviour — CRITICAL
+
+Implement Gmail-like navigation with this exact direction:
+
+- **Swipe LEFT → Previous article**
+- **Swipe RIGHT → Next article**
+
+Do not assume Flutter's default `PageView` direction satisfies this requirement.
+
+Inspect and explain how you will implement and test the actual gesture direction on a physical device.
+
+The user must be able to navigate between articles without returning to Discover.
+
+## 4. Pagination Integration
+
+When the user reaches the last currently loaded article and swipes RIGHT:
+
+1. Check whether another API page exists.
+2. If another page exists, invoke the existing ArticleViewModel pagination method.
+3. Display newly loaded articles in the detail navigation sequence.
+4. Prevent duplicate API requests while a request is already running.
+5. Prevent duplicate articles.
+6. Preserve the active search query during pagination.
+7. Do not request more data when `hasMore` is false.
+
+Inspect the actual ViewModel implementation and report the exact available methods and state properties. Do not invent method names.
+
+## 5. Navigation and Index Synchronization
+
+Explain how you will:
+
+- Open the detail screen with the selected article.
+- Identify the selected article reliably, preferably using its unique ID.
+- Keep the selected index synchronized with the article list.
+- Handle the list growing after pagination.
+- Handle articles disappearing or changing after search or refresh.
+- Return to Discover while preserving appropriate screen state.
+- Prevent stale indexes and out-of-range errors.
+
+Reuse Provider + ChangeNotifier. Do not introduce another state-management solution.
+
+## 6. Loading, Error and Edge Cases
+
+Plan the UI behaviour for:
+
+- Next article is already loaded.
+- Next article requires pagination.
+- Pagination is in progress.
+- Pagination fails.
+- No more articles are available.
+- Article list is empty.
+- A search query is active.
+- Refresh changes the article list.
+- User rapidly swipes multiple times.
+- User reaches the first or last article.
+
+Avoid infinite loading indicators, duplicate requests, and unexpected navigation.
+
+## 7. Testing Requirements
+
+Plan tests that verify:
+
+1. Swipe LEFT navigates to the previous article.
+2. Swipe RIGHT navigates to the next article.
+3. First article cannot navigate to a nonexistent previous article.
+4. Last loaded article triggers pagination when more data exists.
+5. Newly fetched articles become navigable.
+6. Pagination is not triggered repeatedly.
+7. Pagination failure can be retried.
+8. Search query is preserved during pagination.
+9. Discover-to-detail navigation works when tapping an article card.
+10. Back navigation returns to Discover.
+11. No index-out-of-range errors occur when the list changes.
+
+Tests must verify actual horizontal gestures and their direction, not merely call navigation methods directly.
+
+## 8. UI and Project Constraints
+
+- Preserve Discover screen design matching PDF page 2.
+- Preserve Article Detail screen design matching PDF page 3.
+- Do not redesign either screen.
+- Do not change the existing Provider + ChangeNotifier architecture.
+- Reuse existing shared widgets, theme, colors, dimensions, and strings.
+- Avoid unnecessary new ViewModels, reusable widgets, or dependencies.
+- Do not modify API models or repositories unless a genuine requirement is identified.
+- Keep Article and Blog functionality separate. This phase concerns Articles only.
+- Do not implement unrelated features.
+
+## 9. Final Audit Report
+
+Return a detailed report covering:
+
+1. Existing navigation and pagination architecture.
+2. Current article-card tap behaviour.
+3. Whether Discover-to-detail navigation belongs in Phase 4.3.
+4. Exact files requiring modification.
+5. Proposed swipe implementation and why it guarantees the required direction.
+6. Pagination integration and duplicate-request prevention.
+7. Index synchronization and list-change handling.
+8. Loading, error and edge-case handling.
+9. Proposed unit and widget tests.
+10. Any risks or missing implementation details.
+11. Confirmation that no files were modified.
+
+**STOP AFTER THE AUDIT. DO NOT IMPLEMENT ANYTHING. WAIT FOR MY APPROVAL.**
+
+
+//-----------phase 4.3 imple -----------
+
+# NEWSLY — PHASE 4.3 IMPLEMENTATION
+## Gmail-like Swipe Navigation + Pagination + Discover-to-Detail Navigation
+
+Act as a Senior Flutter Developer. Implement Phase 4.3 according to the approved read-only audit.
+
+**Project:** `D:\Newsly`
+
+**Current branch:** `ID-2`
+
+**Architecture:** Flutter + Provider + ChangeNotifier + MVVM.
+
+The audit has been reviewed and approved. Follow the requirements below strictly.
+
+## 1. Mandatory Behaviour
+
+Implement this complete user journey:
+
+1. User opens Discover.
+2. User taps any article card.
+3. The corresponding Article Detail screen opens.
+4. User swipes RIGHT to navigate to the next article.
+5. User swipes LEFT to navigate to the previous article.
+6. When the user reaches the end of loaded articles, the next API page is fetched.
+7. Newly loaded articles become available in the detail pager.
+8. User presses Back to return to Discover.
+
+**CRITICAL SWIPE DIRECTION:**
+- Finger moves LEFT (`dx < 0`) → Previous article (lower index).
+- Finger moves RIGHT (`dx > 0`) → Next article (higher index).
+
+Use `PageView.builder(reverse: true)` or another verified implementation that guarantees this behaviour. Do not assume the default PageView direction is correct.
+
+## 2. Discover-to-Detail Navigation
+
+Modify the existing placeholder `onTap` callback in:
+
+`lib/views/screens/discover_screen.dart`
+
+Push `ArticleDetailScreen` when an article card is tapped.
+
+Pass the selected article's unique ID and any other necessary information.
+
+The detail screen must locate the selected article by ID in the shared `ArticleViewModel.articles` list.
+
+Do not create a new ViewModel or duplicate the article list.
+
+Preserve Discover's existing scroll position and loaded data when returning from the detail screen.
+
+## 3. Article Detail Pager
+
+Modify:
+
+`lib/views/screens/article_detail_screen.dart`
+
+Convert the existing detail experience into a horizontally navigable article pager while preserving the existing Phase 4.2 visual design.
+
+Requirements:
+
+- Use `PageView.builder` for dynamically loaded articles.
+- Use a `PageController` initialized at the selected article's index.
+- Preserve the existing hero image, gradient, floating controls, title, metadata, publisher row, summary and Read Full Article button.
+- Keep the vertical scrolling behaviour of the detail content.
+- Keep the existing external article URL launching functionality.
+- Ensure each article's Hero tag is unique.
+- Preserve dark theme and responsive layout.
+- Dispose the PageController correctly.
+- Preserve the existing standalone article detail rendering behaviour and Phase 4.2 widget tests wherever possible.
+
+Avoid unnecessary new widgets and dependencies. Extract an internal presentation widget only if needed to reuse the existing detail UI inside the pager.
+
+## 4. Pagination Integration
+
+Reuse the existing `ArticleViewModel` methods and properties:
+
+- `articles`
+- `hasMore`
+- `isLoadingMore`
+- `paginationError`
+- `searchQuery`
+- `loadMore()`
+- `retryLoadMore()`
+
+Do not invent new ViewModel APIs or duplicate repository logic.
+
+### Pagination behaviour
+
+- Trigger `loadMore()` when the user reaches the last currently loaded article and more data exists.
+- Also handle the case where the detail screen opens directly on the last loaded article.
+- If the user attempts to advance while pagination is running, display a suitable loading page.
+- If pagination fails, display an error state with a retry action.
+- On successful pagination, newly loaded articles must become navigable.
+- Do not fetch more when `hasMore == false`.
+- Do not repeatedly trigger pagination for the same page.
+
+The existing ViewModel should continue handling duplicate-request protection, ID-based deduplication and active search query preservation.
+
+Do not change API models or repositories unless a genuine technical issue makes it unavoidable. Explain any necessary change before making it.
+
+## 5. Index Synchronization and List Changes
+
+This is important.
+
+- Identify the selected article by unique ID.
+- Do not rely exclusively on an index passed from Discover.
+- Keep the current article synchronized with the ViewModel list.
+- When pagination appends articles, maintain the current article and allow navigation into the appended items.
+- If search or refresh changes the list, safely reconcile the current article.
+- If the current article disappears, choose a safe fallback rather than using an invalid index.
+- Prevent RangeError and out-of-range PageController operations.
+- Handle empty article lists gracefully.
+
+Avoid unnecessary jumps or resets during pagination.
+
+## 6. Loading and Error UI
+
+Use existing shared components:
+
+- `AppLoader`
+- `AppErrorView`
+- `AppEmptyView`
+- `AppButton`
+
+Handle:
+
+- Pagination loading.
+- Pagination failure with retry.
+- No more articles.
+- Empty article list.
+- Rapid repeated swipes.
+- First and last article boundaries.
+
+Keep the existing visual design consistent with the reference PDF.
+
+## 7. Testing
+
+Update existing tests and add necessary tests.
+
+### Article Detail tests
+
+1. Swipe RIGHT advances to the next article.
+2. Swipe LEFT returns to the previous article.
+3. First article cannot navigate to a nonexistent previous article.
+4. Last loaded article triggers pagination when more data exists.
+5. Opening the last loaded article also triggers pagination.
+6. Newly fetched articles become navigable.
+7. Pagination is not triggered repeatedly.
+8. Pagination failure displays a retry action.
+9. Retry successfully loads the next page.
+10. Search query remains preserved during pagination.
+11. List changes do not cause index errors.
+12. Existing Phase 4.2 detail UI tests continue passing.
+
+### Discover tests
+
+1. Tapping an article card opens its corresponding detail screen.
+2. The correct article is initially displayed.
+3. Back navigation returns to Discover.
+4. Previously loaded articles and Discover state are preserved.
+
+**Important:** Gesture tests must use actual horizontal drags and verify the displayed article title after navigation. Do not only test navigation methods directly.
+
+## 8. Physical Device Verification
+
+After automated tests pass:
+
+1. Build and install the debug APK on the connected Android device if available.
+2. Open Discover.
+3. Tap an article card.
+4. Verify the correct article opens.
+5. Swipe RIGHT and verify the next article appears.
+6. Swipe LEFT and verify the previous article appears.
+7. Reach the last loaded article and verify pagination.
+8. Verify newly fetched articles can be opened.
+9. Return to Discover and verify the screen state is preserved.
+
+Do not claim physical device verification if the device is unavailable or the build/install fails.
+
+## 9. Project Constraints
+
+- Keep Provider + ChangeNotifier.
+- Preserve MVVM architecture.
+- Do not introduce GetX, Bloc or another state-management solution.
+- Do not redesign Discover or Article Detail.
+- Do not modify Blog functionality.
+- Do not add unnecessary dependencies.
+- Avoid unrelated refactoring.
+- Inspect existing code before modifying it.
+- Follow existing naming, formatting and error-handling conventions.
+- Do not commit or push changes.
+
+## 10. Final Verification and Report
+
+Run:
+
+```bash
+dart format lib test
+flutter analyze
+flutter test
+```
+
+Inspect:
+
+```bash
+git status --short
+git diff --stat
+git diff
+```
+
+Report:
+
+1. Files created and modified.
+2. Discover-to-detail navigation implementation.
+3. How swipe direction is guaranteed.
+4. Pagination integration.
+5. Index synchronization strategy.
+6. Loading and error handling.
+7. Tests added and total passing tests.
+8. Flutter analyzer and formatting results.
+9. Physical device verification results, if performed.
+10. Any remaining issues or limitations.
+
+**STOP after Phase 4.3. Do not start Phase 4.4 or any unrelated feature without approval.**
+
+//------------------ phase 4.4 audit -------
+
+# NEWSLY — PHASE 4.4: BLOGS FEATURE — READ-ONLY CODE AUDIT
+
+We are starting Phase 4.4 of the Newsly Flutter application.
+
+## Objective
+
+Implement the Blogs feature using the Spaceflight News API v4.
+
+API endpoints:
+- Blog listing: `GET /v4/blogs/`
+- Blog details: `GET /v4/blogs/{id}/`
+
+Before implementation, inspect the existing project and prepare a detailed implementation plan.
+
+**IMPORTANT: This is a READ-ONLY AUDIT. Do not modify, create, delete, or format any files. Do not run commands that change project files.**
+
+## 1. Inspect the existing architecture
+
+Review the following areas:
+
+- `lib/models/`
+- `lib/repositories/`
+- `lib/viewmodels/`
+- `lib/views/screens/`
+- `lib/views/widgets/`
+- `lib/core/network/`
+- `lib/core/constants/`
+- `lib/main.dart`
+- Existing tests.
+
+Identify the existing `BlogModel` and `BlogRepository` implementations created during the foundation phase.
+
+## 2. Inspect BlogModel
+
+Verify:
+- All API response fields currently supported.
+- JSON parsing and serialization.
+- Nullable fields and safe parsing.
+- Date parsing.
+- Image URL handling.
+- Original blog URL handling.
+- Whether the model matches the actual `/v4/blogs/` API response.
+
+Do not assume the blog response is identical to the article response. Inspect the existing model and API documentation or response structure.
+
+## 3. Inspect BlogRepository
+
+Verify:
+- Whether the repository already supports fetching blogs.
+- Whether it uses the existing centralized API client.
+- Whether pagination is supported.
+- Whether blog details can be fetched by ID.
+- Error handling and response parsing.
+- Whether API endpoints are centralized.
+
+Do not create a second API client or duplicate networking logic.
+
+## 4. Inspect existing Article implementation
+
+Use the completed Articles feature as the reference for:
+- Repository structure.
+- Provider + ChangeNotifier usage.
+- Loading, error, and empty states.
+- Pagination and duplicate prevention.
+- Search implementation, if supported by the Blogs API.
+- Detail-screen navigation.
+- Shared widgets and theme usage.
+
+Identify which components can be reused without changing the existing Articles feature.
+
+## 5. UI and navigation assessment
+
+Inspect the existing Discover and Article Detail screens.
+
+Recommend how Blogs should be integrated without redesigning the existing UI.
+
+Consider:
+- How users will access Blogs.
+- How blog cards should reuse the existing design system.
+- Whether a separate Blog listing screen is needed.
+- Whether a separate Blog detail screen is needed.
+- How users will navigate between blog listing and detail.
+- Whether the existing Article Detail screen can safely support blogs or whether separate screens are preferable.
+
+Do not implement the UI during this audit.
+
+## 6. Required implementation plan
+
+Prepare a clear report containing:
+
+1. Existing BlogModel status.
+2. Existing BlogRepository status.
+3. API response fields and parsing gaps.
+4. Required API methods.
+5. Required ViewModel and Provider changes.
+6. Required screens and navigation changes.
+7. Shared widgets that can be reused.
+8. Exact files that need modification.
+9. New files that need creation.
+10. Required unit, widget, and integration tests.
+11. Any API limitations or uncertainties.
+
+For every proposed file change, explain its purpose.
+
+## 7. Strict project constraints
+
+- Flutter and Dart.
+- Provider + ChangeNotifier.
+- Existing MVVM architecture.
+- Reuse the existing Dio/API client.
+- Reuse existing constants, theme, error handling, and shared widgets.
+- Do not introduce GetX, Bloc, or another state-management solution.
+- Do not redesign existing Articles screens.
+- Do not refactor unrelated code.
+- Do not fabricate API fields or blog metadata.
+- Keep the implementation incremental and consistent with the existing project.
+
+## Final instruction
+
+Stop after the read-only audit.
+
+Do not implement Phase 4.4 yet. Wait for my approval of the audit and implementation plan.
+
+//--------second verification 4.4 --------
+
+# NEWSLY — PHASE 4.4: BLOG API SCHEMA CORRECTION — READ-ONLY
+
+Review the Phase 4.4 audit again before implementation. I found a possible API schema mismatch that must be resolved.
+
+**Do not modify, create, delete, or format any files. This is a read-only verification.**
+
+## 1. Verify the actual Blog API schema
+
+Official API documentation:
+https://api.spaceflightnewsapi.net/v4/docs/
+
+Blog endpoints:
+- GET `/v4/blogs/`
+- GET `/v4/blogs/{id}/`
+
+The published API specification includes a `featured` boolean field in the Blog response. The previous audit incorrectly stated that Blogs do not contain this field.
+
+Inspect the existing `blog_model.dart` and verify:
+
+- Is `featured` currently implemented?
+- If missing, report it as a required model enhancement.
+- Verify all other API fields against the actual Blog schema.
+- Do not assume Blog and Article models are identical.
+
+## 2. Verify published date handling
+
+Inspect `Blog.fromJson()`.
+
+If `published_at` is missing or invalid, does the model assign `DateTime.now()`?
+
+If yes, explain why this is potentially misleading and recommend a safe nullable date representation consistent with the existing Article implementation.
+
+Do not change the model yet.
+
+## 3. Verify Blog detail endpoint usage
+
+Inspect `BlogRepository.getBlogById()` and the planned `BlogDetailScreen`.
+
+Explain whether the detail screen will:
+- Use the already-loaded Blog object only;
+- Fetch the selected blog using `getBlogById(id)`; or
+- Use the loaded object immediately and fetch the detail record when needed.
+
+Recommend the simplest reliable approach that actually uses the detail endpoint appropriately, avoids unnecessary duplicate API requests, and preserves swipe navigation.
+
+## 4. Verify search and pagination
+
+Confirm from the API contract that:
+- `search` searches title and summary.
+- `limit` and `offset` support pagination.
+- The response contains `count`, `next`, `previous`, and `results`.
+
+Verify the existing BlogRepository and BlogViewModel behavior against these capabilities.
+
+## 5. Final response
+
+Return only:
+1. Corrected Blog API field table.
+2. Missing or incorrect model fields.
+3. Date parsing recommendation.
+4. Blog detail fetching recommendation.
+5. Any additional implementation-plan corrections.
+
+Do not implement anything. Wait for approval.
+
+//------------------ phase 4.4 implementation review ----
+
+# NEWSLY — PHASE 4.4 FINAL CODE REVIEW (READ-ONLY)
+
+The Blogs feature implementation is complete according to the implementation report.
+
+Before approving Phase 4.4, perform a final read-only code review.
+
+**Do not modify, create, delete, format, or refactor any files.**
+
+## 1. Verify the Blog API schema
+
+Inspect `lib/models/blog_model.dart`.
+
+- Confirm how `featured` is parsed.
+- Confirm whether the actual Spaceflight News API Blogs response contains `featured`.
+- Provide evidence from an actual API response or official schema.
+- If live API access is unavailable, explicitly state that `featured` has not been independently verified.
+- Confirm missing and invalid `featured` values safely default to false.
+- Confirm nullable `publishedAt` has no `DateTime.now()` fallback.
+- Confirm `toJson`, equality, and hashCode include the new field correctly.
+
+Do not claim live API verification unless an actual response or authoritative schema was inspected.
+
+## 2. Verify publisher metadata is not fabricated
+
+Inspect:
+- `lib/views/screens/blog_detail_screen.dart`
+- `lib/shared/widgets/article_card.dart`
+
+Check:
+- Is a publisher verification badge displayed?
+- Is there any hardcoded verified status?
+- Is the Trending chip displayed only when `featured == true`?
+- Are author names shown only when available?
+- Are missing publication dates displayed as "Date unavailable"?
+- Are category or publisher labels based on actual API data?
+
+Do not modify the files. Report any misleading metadata or visual indicators.
+
+## 3. Verify Article feature compatibility
+
+Compare the current implementation with the completed Phase 4.3 behavior.
+
+Inspect:
+- `lib/shared/widgets/article_card.dart`
+- `lib/views/screens/discover_screen.dart`
+- `lib/views/screens/article_detail_screen.dart`
+- Existing Article tests.
+
+Confirm:
+- Article cards still render correctly.
+- Article dates remain correct.
+- Article swipe direction remains RIGHT = next and LEFT = previous.
+- Article pagination and retry are unchanged.
+- Article search, category selection, pull-to-refresh, and back navigation remain functional.
+- No unnecessary ArticleDetailScreen changes were introduced.
+
+## 4. Verify Discover integration
+
+Inspect `discover_screen.dart`.
+
+Confirm:
+- Articles / Blogs selector works.
+- Original Discover visual design remains consistent with PDF page 2.
+- Article and Blog scroll positions are independently preserved.
+- Search values and category selections are preserved when switching feeds.
+- Initial Blog fetching does not repeatedly trigger.
+- Blog pagination and refresh work.
+- Switching feeds does not accidentally dispose or reset either ViewModel.
+
+## 5. Verify Blog detail behavior
+
+Inspect `blog_detail_screen.dart`.
+
+Confirm:
+- Cached blog renders immediately.
+- Direct ID fetch works when no cached blog is available.
+- Refresh fetches the current blog by ID.
+- Horizontal swipe direction is correct.
+- Current blog ID remains stable when pagination appends new blogs.
+- No duplicate pagination requests occur.
+- Pagination retry uses the correct offset.
+- Vertical scrolling works without interfering with horizontal paging.
+- External URL handling validates HTTP/HTTPS and handles errors.
+
+## 6. Verify tests and Git diff
+
+Inspect the existing test files and current Git diff.
+
+Confirm:
+- All 70 tests genuinely ran and passed.
+- No tests were weakened or removed to obtain a passing result.
+- No unrelated files or dependencies were changed.
+- No generated or environment-specific files were accidentally modified.
+
+Do not commit or push.
+
+## Final response
+
+Provide:
+1. Confirmed findings.
+2. Any defects or misleading UI details.
+3. Whether `featured` is genuinely API-verified.
+4. Whether the existing Articles feature is unaffected.
+5. Any remaining risks.
+6. Final recommendation: APPROVE or FIX REQUIRED.
+
+Stop after this read-only review.
+
+//----------- phase 4.4 micro fix -----
+
+# NEWSLY — PHASE 4.4 FINAL MICRO-FIX
+
+Make one narrowly scoped UI correction.
+
+**File:** `lib/views/screens/blog_detail_screen.dart`
+
+1. Locate `_buildPublisherRow`.
+2. Remove the unconditional `Icons.verified_rounded` checkmark beside the publisher/author name.
+3. Preserve the existing publisher/author name, avatar, spacing, alignment, typography, colors, and overall layout.
+4. Do not add a replacement icon or invent verification metadata.
+5. Do not modify any other screen, model, repository, ViewModel, API integration, or feature.
+6. Run:
+   - `dart format`
+   - `flutter analyze`
+   - `flutter test`
+
+**Acceptance criteria:**
+- Verified checkmark is no longer displayed.
+- Publisher/author row remains visually consistent.
+- All 70 existing tests continue to pass.
+- No analyzer issues.
+- No unrelated changes.
+- Do not commit or push.
+
+Report the exact file changed and test results. Stop after completion.
+
+//----------- phase 4 refactor ----------------------
+
+# NEWSLY — UX IMPROVEMENTS: FEED FILTER SELECTOR + BOOK-STYLE SWIPE NAVIGATION
+
+We need to improve two existing UX interactions in the Newsly Flutter application.
+
+**Project:** `D:\Newsly`  
+**Current branch:** `ID-2`  
+**Architecture:** MVVM + Provider + ChangeNotifier  
+**Reference design:** `Simple News App Flutter.pdf`
+
+These are targeted UX improvements. Do not redesign the application or refactor unrelated code.
+
+## IMPORTANT WORKING RULES
+
+1. Inspect the existing implementation before making changes.
+2. Reuse existing widgets, ViewModels, repositories, theme, colors, dimensions, and navigation.
+3. Do not introduce GetX, Bloc, or another state-management solution.
+4. Do not create unnecessary reusable widgets or introduce unnecessary dependencies.
+5. Preserve all existing Articles and Blogs API functionality.
+6. Preserve independent state for both feeds.
+7. Do not modify unrelated screens or features.
+8. Do not commit or push changes.
+9. Keep changes incremental and production-quality.
+
+---
+
+# PART 1 — MOVE ARTICLES / BLOGS SELECTOR INTO SEARCH FILTER
+
+## Current behaviour
+
+The Discover screen currently has a separate Articles / Blogs segmented selector below the Discover header.
+
+The search field has a filter icon on its right side.
+
+## Required new behaviour
+
+Remove the separate Articles / Blogs selector from below the Discover header.
+
+Instead, make the rightmost filter icon inside the search field responsible for selecting the content type.
+
+When the user taps the filter icon, display a polished selection UI containing:
+
+- Articles
+- Blogs
+
+### UI/UX requirements
+
+Use the most suitable approach after inspecting the current screen.
+
+Preferred approach: a compact, rounded bottom sheet or popover that feels consistent with the existing Newsly design.
+
+The selection UI should include:
+
+- Clear title such as "Explore content".
+- Two selectable options: Articles and Blogs.
+- Suitable icons for each option.
+- Clearly visible selected state.
+- Smooth opening and closing animation.
+- Appropriate touch targets.
+- Clean spacing, rounded corners, and theme-aware colors.
+- A clear visual indication of the currently active content type.
+
+Avoid a large or unnecessarily complicated filter screen.
+
+### Behaviour
+
+When Articles is selected:
+- Display the existing Articles feed.
+- Use the existing ArticleViewModel.
+- Preserve the existing Articles search query.
+- Preserve the Articles category selection.
+- Preserve the Articles scroll position.
+
+When Blogs is selected:
+- Display the existing Blogs feed.
+- Use the existing BlogViewModel.
+- Preserve the Blogs search query.
+- Preserve the Blogs category selection.
+- Preserve the Blogs scroll position.
+
+Switching between Articles and Blogs must feel smooth.
+
+Do not reset or unnecessarily refetch the feed every time the user changes the selection.
+
+### Search behaviour
+
+- The search input must continue searching the currently selected content type.
+- The search hint and clear action must remain correct.
+- The filter icon must remain accessible and functional.
+- Do not break the existing search debounce or pagination behaviour.
+
+The Discover header, subtitle, search field, category chips, and article cards should retain the original PDF-inspired visual design.
+
+---
+
+# PART 2 — REVERSE SWIPE DIRECTION
+
+## Current behaviour
+
+Currently, detail navigation behaves as follows:
+
+- Swipe RIGHT → Next article/blog.
+- Swipe LEFT → Previous article/blog.
+
+We want the opposite behaviour.
+
+## Required behaviour
+
+Implement the following consistently for ArticleDetailScreen and BlogDetailScreen:
+
+| Gesture | Expected action |
+|---|---|
+| Swipe LEFT | Next article/blog |
+| Swipe RIGHT | Previous article/blog |
+
+This should behave consistently from the first item through paginated items.
+
+### Important
+
+Inspect the existing PageView configuration, including `reverse`, index handling, and page-change callbacks.
+
+Do not simply change `reverse: true` to `false` without checking the complete navigation logic.
+
+The implementation must correctly handle:
+
+- Initial selected item.
+- Next and previous item navigation.
+- Current item ID and index synchronization.
+- First and last item boundaries.
+- Loading the next API page when reaching the end.
+- Pagination loading indicator.
+- Pagination error and retry.
+- No duplicate pagination requests.
+- No unexpected jump back to an earlier item.
+- Returning to Discover with the correct feed state.
+
+Preserve the existing pagination logic and ViewModel architecture.
+
+---
+
+# PART 3 — BOOK-STYLE PAGE TRANSITION
+
+We want the detail navigation to feel more like turning pages in a book.
+
+### Desired experience
+
+- A natural, smooth page transition.
+- Direction should match the new swipe behaviour.
+- The next page should feel like the user is moving forward through content.
+- Previous navigation should feel natural too.
+- Avoid abrupt horizontal movement.
+- Maintain good frame performance on normal Android devices.
+
+### Animation approach
+
+First inspect the existing Flutter implementation and determine the most suitable approach.
+
+Prefer a lightweight Flutter-native animation or a small custom transition if it can provide the required experience without unnecessary dependencies.
+
+A subtle book-style page transition is acceptable if a realistic 3D page-curl effect would introduce significant complexity or performance problems.
+
+Do not add a third-party package without first checking whether the desired effect can be achieved using existing Flutter capabilities.
+
+Important:
+- Do not sacrifice swipe responsiveness for animation.
+- Do not block rapid navigation.
+- Do not cause duplicate page loads.
+- Do not break vertical scrolling of article content.
+- Do not alter the Article or Blog detail content layout.
+- Keep the experience consistent across both detail screens.
+
+---
+
+# PART 4 — TESTING
+
+Update or add tests for the changed functionality.
+
+## Discover screen tests
+
+Verify:
+1. Separate Articles / Blogs selector is no longer displayed.
+2. Filter icon opens the content selector.
+3. Articles option selects the Articles feed.
+4. Blogs option selects the Blogs feed.
+5. Switching feeds preserves independent search state.
+6. Switching feeds preserves independent scroll state.
+7. Existing category selection and search behaviour continue working.
+8. Theme-aware selection UI works in light and dark themes.
+
+## Article detail tests
+
+Verify:
+1. Swipe LEFT navigates to the next article.
+2. Swipe RIGHT navigates to the previous article.
+3. Boundary handling works correctly.
+4. Pagination still loads the next page.
+5. Pagination retry remains functional.
+
+## Blog detail tests
+
+Verify:
+1. Swipe LEFT navigates to the next blog.
+2. Swipe RIGHT navigates to the previous blog.
+3. Boundary handling works correctly.
+4. Pagination still loads the next page.
+5. Pagination retry remains functional.
+
+## Regression testing
+
+Run:
+
+```bash
+dart format lib test
+flutter analyze
+flutter test
+```
+
+All existing tests must continue passing. Do not weaken or delete existing tests just to make the suite pass.
+
+---
+
+# PART 5 — FINAL VERIFICATION
+
+After implementation, provide a report containing:
+
+1. Exact files changed.
+2. How the Articles / Blogs filter selector works.
+3. How the new swipe direction is implemented.
+4. How the book-style transition works.
+5. Confirmation that Article and Blog pagination still work.
+6. Tests added or updated.
+7. Full test count and result.
+8. Flutter analyze result.
+9. Any known limitations.
+
+If a physical Android device is connected, install and verify the updated app.
+
+Manually check:
+- Filter selector opening and selection.
+- Articles ↔ Blogs switching.
+- Swipe LEFT → Next.
+- Swipe RIGHT → Previous.
+- Smooth transition.
+- Pagination at the end of the loaded feed.
+
+**Do not commit or push.**
+
+## FINAL RULE
+
+Make only these two requested UX improvements. Preserve all other existing functionality and the original Newsly design language.
+
+Stop after implementation and report the results. Do not start Phase 5's other tasks yet.
+
+//------------ phase 5 step 1 UI enhancement and responsive -------
+
+# NEWSLY — PHASE 5, STEP 1
+## T028: FIX NULLABLE PUBLICATION DATES AND MISLEADING METADATA
+
+**Project:** `D:\Newsly`  
+**Branch:** `ID-2`  
+**Architecture:** MVVM + Provider + ChangeNotifier
+
+Implement only the T028 issues identified in the Phase 5 audit.
+
+### 1. Inspect before implementation
+
+Inspect:
+- `lib/models/article_model.dart`
+- `lib/models/blog_model.dart`
+- `lib/shared/widgets/article_card.dart`
+- `lib/views/screens/article_detail_screen.dart`
+- `lib/views/screens/blog_detail_screen.dart`
+- Related model and widget tests.
+
+Trace every usage of `Article.publishedAt` before changing its type.
+
+### 2. Fix Article publication date handling
+
+Currently, ArticleModel uses `DateTime.now()` when the API publication date is missing or invalid.
+
+This is incorrect because it creates fabricated publication metadata.
+
+Required changes:
+
+- Change `publishedAt` to `DateTime?`.
+- Use `DateTime.tryParse()` safely.
+- Return null when the API field is missing, null, empty or invalid.
+- Do not substitute `DateTime.now()` or another fabricated date.
+- Update `fromJson` and `toJson` consistently.
+- Preserve existing JSON field names and API compatibility.
+- Check equality, copyWith and other model methods if present.
+
+Follow the nullable-date handling approach already used in BlogModel where appropriate.
+
+### 3. Update UI date handling
+
+Inspect every Article publication date usage, including:
+
+- ArticleCard.
+- ArticleDetailScreen.
+- Any date formatting helper.
+
+When the publication date is null, display the existing `AppStrings.dateUnavailable` value.
+
+Ensure:
+- No null exceptions.
+- No fabricated dates.
+- Valid dates continue displaying in the existing format.
+- Blog date handling remains unchanged unless a genuine related defect is discovered.
+
+### 4. Remove misleading verification metadata
+
+Inspect the publisher row in ArticleDetailScreen.
+
+Remove the unconditional `Icons.verified_rounded` verification checkmark because the API does not provide publisher verification information.
+
+Do not replace it with another badge or fabricated metadata.
+
+Keep the publisher name, alignment and visual hierarchy clean.
+
+Also check whether any other article detail metadata falsely implies verification, authorship or categories.
+
+Do not redesign the detail screen.
+
+### 5. Tests
+
+Add or update tests covering:
+
+**ArticleModel**
+- Valid publication date.
+- Missing publication date.
+- Null publication date.
+- Empty publication date.
+- Invalid publication date.
+- JSON serialization when publication date is null.
+
+**ArticleCard and ArticleDetailScreen**
+- Null publication date displays the unavailable-date fallback.
+- Valid date still displays correctly.
+- No verified publisher icon is displayed.
+- Missing title, summary, image and publisher remain safe.
+
+Preserve all existing tests. Do not weaken existing assertions.
+
+### 6. Verification
+
+Run:
+
+```bash
+dart format lib test
+flutter analyze
+flutter test
+```
+
+Report:
+1. Files changed.
+2. Exact model changes.
+3. All affected usages of publishedAt.
+4. Tests added or updated.
+5. Full test result.
+6. Analyzer result.
+7. Any remaining concerns.
+
+### STRICT SCOPE
+
+Do not implement responsive layouts, text scaling, tablet adaptations or other Phase 5 tasks yet.
+
+Do not modify API networking, pagination, ViewModels or unrelated UI.
+
+Do not commit or push.
+
+Stop after completing T028 and provide the implementation report.
+
+//---------------- phase 5 responsiveness part 2 ------
+
+# NEWSLY — PHASE 5, T024: RESPONSIVE DISCOVER SCREEN
+
+Implement **only T024: Responsive Discover Screen** in the existing Newsly Flutter project.
+
+## 1. First inspect the existing implementation
+
+Before changing anything, inspect:
+- `lib/views/screens/discover_screen.dart`
+- `lib/shared/widgets/article_card.dart`
+- `lib/core/constants/responsive_layout.dart` (or the actual responsive helper location)
+- `lib/core/constants/app_dimensions.dart`
+- `lib/core/theme/app_theme.dart`
+- Existing Discover and accessibility tests.
+
+Understand the current phone layout and preserve it.
+
+## 2. Required behavior
+
+### Phone layout
+- Keep the existing single-column article list.
+- Preserve the current reference design, spacing, typography, search bar, category chips, filter bottom sheet, and navigation.
+- Do not redesign the phone UI.
+
+### Tablet layout
+For wider screens, introduce a responsive article grid.
+
+Suggested behavior:
+- Below 600 logical pixels: one column.
+- 600–899 logical pixels: two columns.
+- 900 logical pixels and above: two or three columns depending on available width.
+- Use sensible maximum content width and consistent spacing.
+- Avoid excessively wide article cards.
+- Keep images, titles, sources, and metadata readable.
+
+These are starting breakpoints, not rigid requirements. Inspect the existing responsive helper and use the project's established conventions where possible.
+
+### Search and filters
+- Search field should use an appropriate maximum width on tablets rather than stretching across the entire display.
+- Category chips should remain horizontally usable.
+- The content-type filter bottom sheet should have a sensible maximum width on tablets and remain centered.
+- Preserve independent Articles and Blogs search/filter/scroll state.
+- Search, refresh, pagination, and filter selection must continue working in both phone and tablet layouts.
+
+### Article and Blog cards
+- Reuse the existing `ArticleCard` and its Blog support.
+- Do not create duplicate card implementations.
+- Ensure grid cards have consistent sizing and do not overflow.
+- Preserve card tap navigation to the correct detail screen.
+
+## 3. Tests to add
+
+Add widget tests for:
+1. Phone width (approximately 390 logical pixels): single-column layout.
+2. Small tablet width (approximately 700 logical pixels): two-column layout.
+3. Large tablet width (approximately 1024 logical pixels): responsive grid.
+4. Search and filter controls remain usable at tablet width.
+5. Article and Blog card navigation still works.
+6. No horizontal or vertical RenderFlex overflow at tablet widths.
+
+Use the existing testing patterns and current Flutter APIs.
+
+## 4. Restrictions
+
+- Do not modify ArticleDetailScreen or BlogDetailScreen. T025 handles detail responsiveness.
+- Do not modify API client, repositories, models, or ViewModels unless a genuine integration defect prevents this task.
+- Do not change swipe direction or page transition behavior.
+- Do not redesign the phone layout.
+- Do not add unnecessary dependencies or duplicate widgets.
+- Do not change unrelated files.
+- Do not commit or push to Git.
+
+## 5. Verification
+
+Run:
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+
+Report:
+- Files changed.
+- Breakpoints and column-count behavior.
+- How the phone layout was preserved.
+- How search, filters, pagination, and navigation behave in grid mode.
+- Test results and total test count.
+- Any remaining limitations.
+
+Stop after T024. Do not start T025 until reviewed and approved.
+
+//-------- responsiveness adjustment in tablet screens ---
+# NEWSLY — PHASE 5, T025: RESPONSIVE ARTICLE & BLOG DETAIL SCREENS
+
+Implement only T025 in the existing Newsly Flutter project.
+
+## 1. Inspect first
+
+Inspect:
+- `lib/views/screens/article_detail_screen.dart`
+- `lib/views/screens/blog_detail_screen.dart`
+- `lib/core/constants/responsive_layout.dart`
+- `lib/core/constants/app_dimensions.dart`
+- `lib/core/theme/app_theme.dart`
+- Existing article detail, blog detail, and accessibility tests.
+
+Understand the current phone layout and preserve its existing visual design.
+
+## 2. Required behavior
+
+### Phone portrait
+- Preserve the current reference design.
+- Keep the hero image, gradient, floating controls, title, metadata, content sheet, publisher information, summary, and Read Full Article action.
+- Do not redesign the phone layout.
+
+### Tablet portrait
+- Use available width sensibly.
+- Keep text readable with a reasonable maximum reading width.
+- Avoid stretching long article summaries across the entire tablet.
+- Maintain the existing visual hierarchy and spacing.
+
+### Landscape / short-height screens
+- Fix the current issue where the hero height has a minimum of 320px and can occupy too much of a short landscape viewport.
+- Calculate hero height using available screen constraints and aspect ratio, not just a fixed minimum.
+- Ensure the title and metadata do not collide with the back/bookmark/more controls.
+- The content sheet and article body must remain scrollable.
+- Avoid clipping, RenderFlex overflow, or inaccessible actions.
+
+### Responsive composition
+- Use a suitable adaptive layout for large tablets if it improves readability.
+- A centered content column or image-and-content composition is acceptable.
+- Preserve the same design language; do not introduce an unrelated redesign.
+- Apply the same behavior to ArticleDetailScreen and BlogDetailScreen.
+
+## 3. Functional behavior must remain unchanged
+
+Verify that:
+- Left swipe opens the next article/blog.
+- Right swipe opens the previous article/blog.
+- Page-turn transition remains intact.
+- Pagination and retry behavior remain intact.
+- Back navigation returns to Discover.
+- Read Full Article still opens the original URL.
+- Missing images and nullable metadata still show safe fallbacks.
+- Bookmark and more controls retain their existing behavior.
+
+Do not change swipe direction or navigation logic.
+
+## 4. Tests to add
+
+Add tests covering:
+1. Article detail at approximately 390 × 844.
+2. Blog detail at approximately 390 × 844.
+3. Article detail at approximately 1024 × 768.
+4. Blog detail at approximately 1024 × 768.
+5. Article detail in landscape, approximately 844 × 390.
+6. Blog detail in landscape, approximately 844 × 390.
+7. No overflow at short landscape heights.
+8. Large text scaling (1.5x and 2.0x) on at least one tablet and one landscape viewport.
+9. Existing swipe and navigation behavior remains unchanged.
+
+Use existing test patterns and current Flutter APIs.
+
+## 5. Restrictions
+
+- Do not modify DiscoverScreen or ArticleCard; T024 is complete.
+- Do not change API clients, repositories, models, or ViewModels.
+- Do not change the swipe direction or page transition.
+- Do not remove or disable system text scaling.
+- Do not add dependencies unless absolutely necessary.
+- Do not modify unrelated files.
+- Do not commit or push to Git.
+
+## 6. Verification
+
+Run:
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+
+If possible, verify on the physical Motorola Moto g04s in portrait and landscape.
+
+Report:
+- Files changed.
+- How hero height responds to screen constraints.
+- Tablet and landscape layout behavior.
+- Confirmation that swipe, pagination, back navigation, and URL launching remain intact.
+- Test results and total test count.
+- Any remaining limitations.
+
+Stop after T025. Do not start T031 until reviewed and approved.
+
+//----- UI POLISH & INTERACTION FEEDBACK-------------
+
+# NEWSLY — PHASE 5, T031: UI POLISH & INTERACTION FEEDBACK
+
+Implement only T031 in the existing Newsly Flutter project.
+
+## 1. Inspect first
+
+Inspect:
+- `lib/views/screens/discover_screen.dart`
+- `lib/views/screens/article_detail_screen.dart`
+- `lib/views/screens/blog_detail_screen.dart`
+- `lib/shared/widgets/article_card.dart`
+- `lib/core/constants/app_strings.dart`
+- `lib/core/constants/app_dimensions.dart`
+- Existing relevant widget tests.
+
+Identify the existing interaction patterns and preserve the approved UI.
+
+## 2. Category chip interaction feedback
+
+In Discover:
+- Replace plain `GestureDetector` interactions for category chips with an appropriate Material interaction widget, such as `InkWell` or `InkResponse`.
+- Preserve current chip dimensions, colors, border radius, selected state, spacing, and typography.
+- Provide visible pressed/tap feedback without introducing an unwanted redesign.
+- Ensure ripple is clipped to the chip's rounded shape.
+- Keep accessibility semantics and tap behavior intact.
+
+## 3. Detail screen floating controls
+
+For Article and Blog detail screens:
+- Inspect back, bookmark, and more controls.
+- Ensure the actual interactive hit area is at least 48×48 logical pixels where practical.
+- Keep the visible icon appearance and spacing consistent with the approved reference design.
+- Avoid enlarging the visible circular background unnecessarily; the invisible hit target may be larger.
+- Ensure controls do not overlap the title or each other in phone portrait, tablet, or landscape.
+- Preserve existing actions and page-turn/swipe behavior.
+
+## 4. Strings and accessibility
+
+- Move the hardcoded "More" tooltip into `AppStrings`.
+- Reuse the same string in both Article and Blog detail screens.
+- Review tooltips and semantic labels for the floating controls.
+- Ensure icon-only controls have meaningful accessibility labels.
+- Do not invent additional functionality for controls that are currently placeholders.
+
+## 5. Tests
+
+Add or update tests to verify:
+1. Category chips respond to taps and preserve selection behavior.
+2. Chip tap feedback uses a Material interaction mechanism.
+3. Floating controls expose at least 48×48 logical pixel hit areas where practical.
+4. Back, bookmark, and more controls retain existing behavior.
+5. Tooltips and semantic labels are present.
+6. No overlap or overflow is introduced at phone and landscape sizes.
+
+Use existing test patterns and Flutter APIs. Avoid brittle tests that depend on internal widget implementation when a behavior-based test is possible.
+
+## 6. Restrictions
+
+- Do not redesign Discover, Article Detail, or Blog Detail.
+- Do not change breakpoints or responsive layouts from T024/T025.
+- Do not change swipe direction, page transition, or pagination.
+- Do not change API, repositories, models, or ViewModels.
+- Do not add dependencies.
+- Do not modify unrelated files.
+- Do not commit or push to Git.
+
+## 7. Verification
+
+Run:
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+
+Report:
+- Exact files changed.
+- Chip interaction feedback implementation.
+- Floating control hit-area sizes.
+- Accessibility labels/tooltips added or updated.
+- Tests and total test count.
+- Any remaining limitations.
+
+Stop after T031. Do not start T026 or other tasks until reviewed and approved.
+
+// UI issue fix ----------------------------------
+
+# NEWSLY — UX BUG FIXES: FILTER BOTTOM SHEET & DETAIL SCREEN CONSISTENCY
+
+Before continuing Phase 6, fix the following two UX issues in the existing Newsly Flutter project.
+
+These are targeted corrections. Preserve all previously approved project requirements, UI references, responsive behavior, and functionality.
+
+## IMPORTANT: Inspect before modifying
+
+Inspect the current implementation and identify the exact causes of both problems.
+
+Relevant files:
+- `lib/views/screens/discover_screen.dart`
+- `lib/views/screens/article_detail_screen.dart`
+- `lib/views/screens/blog_detail_screen.dart`
+- `lib/shared/widgets/article_card.dart`
+- `lib/core/constants/app_dimensions.dart`
+- `lib/core/constants/app_strings.dart`
+- Existing related widget tests.
+
+Do not assume the cause. Trace the actual widget layout and constraints first.
+
+# ISSUE 1 — Filter bottom sheet occupies too much space
+
+## Current problem
+
+On a normal portrait phone screen, tapping the filter icon opens the Articles / Blogs selection bottom sheet.
+
+Currently:
+- The sheet occupies approximately half the screen.
+- It contains only two selection options.
+- The options appear awkwardly centered vertically.
+- There is too much unused vertical space.
+- The overall presentation does not feel like a compact selection menu.
+
+## Expected behavior
+
+Redesign only the layout behavior of this existing bottom sheet:
+
+1. Its height should naturally fit its content, rather than unnecessarily occupying half the screen.
+2. Position the heading and selection options near the top, with balanced padding and spacing.
+3. Keep the Articles and Blogs options visually clear and easy to tap.
+4. Preserve the existing selected-state indicator and selection behavior.
+5. Preserve dark mode and accessibility.
+6. Keep SafeArea handling so content does not overlap system navigation areas.
+7. On tablets, retain the existing maximum width and centered presentation.
+8. If the sheet needs to scroll on unusually short screens or at large text scales, scrolling must still work.
+
+Do not add unnecessary empty space or force a fixed half-screen height.
+
+The result should feel like a polished, compact mobile selection sheet.
+
+# ISSUE 2 — Inconsistent floating controls and hero image behavior
+
+## Current problem
+
+In ArticleDetailScreen and BlogDetailScreen, the positions of the back, bookmark, and more buttons appear to vary between different articles/blogs.
+
+This seems related to differences in article image dimensions, aspect ratios, or how images are fitted inside the hero area.
+
+The detail screen should have consistent geometry regardless of the image.
+
+## Expected behavior
+
+### A. Consistent hero image area
+
+- Use a predictable hero container with the existing responsive height behavior from T025.
+- The image should fill the complete hero area.
+- Use `BoxFit.cover` where appropriate so different image aspect ratios are cropped naturally instead of leaving inconsistent empty areas.
+- Never stretch or distort an image.
+- Keep the focal subject reasonably visible where possible.
+- Preserve the existing dark gradient overlay so the title remains readable.
+- Preserve the existing missing-image fallback. It must fill the same hero container.
+
+### B. Consistent floating controls
+
+Back, bookmark, and more controls must be anchored independently of the image's intrinsic dimensions.
+
+- Use a consistent Stack-based positioning strategy.
+- Respect SafeArea and status-bar insets.
+- Back button should remain at a consistent top-left position.
+- Bookmark and more buttons should remain at consistent top-right positions.
+- Keep the existing minimum 48×48 logical pixel touch targets.
+- Preserve the existing visible 40×40 circular backgrounds.
+- Use identical padding and spacing on ArticleDetailScreen and BlogDetailScreen.
+- The controls must not move when a different image loads or when the image has a different aspect ratio.
+- Ensure controls do not overlap the headline.
+
+### C. Preserve responsive behavior
+
+Keep the T025 behavior:
+- Phone portrait.
+- Tablet portrait.
+- Phone landscape.
+- Short-height landscape.
+- Large text scaling.
+
+Do not reintroduce the previous fixed 320px minimum hero height problem.
+
+### D. Preserve the detail screen design
+
+Do not redesign the detail screen.
+
+Keep:
+- Hero image and gradient.
+- Category/featured information as currently implemented.
+- Headline and metadata.
+- Rounded content sheet.
+- Publisher information.
+- Summary/body.
+- Read Full Article / Read Full Blog Post action.
+- Existing book-style page transition.
+
+# FUNCTIONAL REQUIREMENTS — DO NOT BREAK
+
+Verify:
+- Left swipe → next article/blog.
+- Right swipe → previous article/blog.
+- Same page-turn transition.
+- Pagination and retry behavior.
+- Back navigation to Discover.
+- Read Full Article and Read Full Blog Post URL launching.
+- Articles and Blogs filter selection.
+- Independent feed state.
+- Large text scaling and dark mode.
+
+Do not fabricate image metadata, categories, or publisher verification information.
+
+# TESTS TO ADD OR UPDATE
+
+## Filter bottom sheet
+1. Verify it opens correctly on a 390 × 844 portrait viewport.
+2. Verify its height is content-based and not unnecessarily half-screen.
+3. Verify both options are positioned naturally near the top.
+4. Verify selecting Articles or Blogs works.
+5. Verify tablet width constraints still work.
+6. Verify large text scaling does not cause overflow.
+
+## Detail screens
+1. Test images with different aspect ratios, including:
+   - Landscape image.
+   - Portrait image.
+   - Square image.
+   - Missing image.
+2. Verify the hero container has consistent geometry.
+3. Verify floating controls have the same positions regardless of image dimensions.
+4. Verify both ArticleDetailScreen and BlogDetailScreen.
+5. Verify portrait, tablet, and short-landscape layouts.
+6. Verify no overflow or control/title collision.
+7. Ensure existing swipe and navigation tests still pass.
+
+Prefer behavior and geometry tests over brittle tests that inspect private widget implementation details.
+
+# RESTRICTIONS
+
+- Do not change API, repositories, models, or ViewModels.
+- Do not change Discover's main layout or tablet grid.
+- Do not change ArticleCard.
+- Do not change swipe direction or page transition behavior.
+- Do not remove text scaling or accessibility support.
+- Do not add dependencies.
+- Do not modify unrelated files.
+- Do not commit or push to Git.
+
+# VERIFICATION
+
+Run:
+- `dart format lib test`
+- `flutter analyze`
+- `flutter test`
+
+If possible, install and verify on the Motorola Moto g04s:
+- Filter sheet in portrait.
+- Article detail with different images.
+- Blog detail with different images.
+- Landscape detail screen.
+
+Capture screenshots before and after if possible.
+
+# FINAL REPORT
+
+Report:
+1. Root cause of the filter sheet sizing/positioning issue.
+2. Exact filter sheet layout changes.
+3. Root cause of inconsistent detail controls.
+4. How hero image sizing and cropping are now handled.
+5. How the controls are anchored consistently.
+6. Files changed.
+7. Test results and total test count.
+8. Physical-device verification.
+9. Any remaining limitations.
+
+Stop after these two UX fixes. Do not start Phase 6 or T032 until reviewed and approved.
+
+//----------  ResponsiveLayout regression check------
+
+Perform a READ-ONLY final audit of the recent UX bug fixes. Do not edit any files.
+
+### 1. ResponsiveLayout regression check
+Inspect `lib/views/widgets/responsive_layout.dart`.
+
+- Identify every screen/widget that uses ResponsiveLayout.
+- Explain how changing Center to Align(topCenter) affects each usage.
+- Verify Discover phone layout and tablet grid remain unchanged.
+- Verify Article and Blog detail layouts remain correctly positioned.
+- Identify any possible regression caused by the shared helper modification.
+
+If the change is unnecessary for the two UX fixes, recommend reverting only that helper change. Do not revert it automatically.
+
+### 2. Detail controls positioning
+Inspect both detail screen implementations.
+
+Verify:
+- Back button uses consistent SafeArea-aware top and left offsets.
+- Bookmark and More controls use consistent SafeArea-aware top and right offsets.
+- All controls remain anchored independently of image dimensions.
+- Both screens use matching layout geometry.
+- Controls do not overlap status bar, title, or one another.
+- Portrait, landscape, and short-height layouts remain correct.
+
+### 3. Hero image behavior
+Inspect the actual widget tree.
+
+Verify:
+- Hero container has explicit width and responsive height.
+- Network images use BoxFit.cover.
+- Images are not stretched.
+- Missing-image fallback fills the same container.
+- Gradient and headline remain correctly layered.
+- Different image aspect ratios cannot change control positions.
+
+### 4. Filter bottom sheet
+Verify:
+- Content-based height is genuinely used.
+- The sheet does not expand unnecessarily on normal portrait phones.
+- Options are top-aligned with balanced spacing.
+- SafeArea and scrolling still work.
+- Tablet maximum width is preserved.
+
+### 5. Functional regression
+Inspect tests and implementation for:
+- Articles/Blogs switching.
+- Independent feed state.
+- Left swipe next and right swipe previous.
+- Page-turn animation.
+- Pagination and retry.
+- Back navigation.
+- Original article/blog URL launching.
+
+### 6. Final report
+Provide:
+- Any regression risks.
+- Whether ResponsiveLayout change should remain.
+- Any missing SafeArea or positioning issues.
+- Whether both UX fixes meet the requested behavior.
+- Exact evidence from source code and tests.
+
+Do not modify files, run automatic formatting, commit, or push. Stop after the audit.
+
+//------Phase 6 — T032: Article Model and Parsing Test Audit-----------
+
+# Phase 6 — T032: Article Model and Parsing Test Audit
+
+**Project:** Newsly (`D:\Newsly`)  
+**Branch:** `ID-4`  
+**Task:** T032 — Article model and parsing tests  
+**Mode:** Read-only audit. Do not modify files yet.
+
+## Objective
+Audit the existing `ArticleModel` and its tests against realistic API responses and malformed or nullable data.
+
+## Instructions
+
+1. Inspect:
+   - `lib/models/article_model.dart`
+   - All existing ArticleModel-related tests.
+   - Any API response fixtures used for article parsing.
+
+2. Check whether tests cover:
+   - Valid, complete article JSON.
+   - Missing optional fields.
+   - Explicit `null` values.
+   - Empty and whitespace-only strings.
+   - Invalid or missing `published_at` values.
+   - Valid date parsing and serialization.
+   - Missing or invalid image URLs.
+   - Missing news-site, title, summary, and URL fields.
+   - Unexpected JSON types.
+   - `fromJson` and `toJson` consistency.
+   - API fields that are not part of the model, without causing parsing failures.
+
+3. Pay particular attention to the nullable `publishedAt` implementation. Confirm that missing or invalid dates remain `null`; never substitute `DateTime.now()`.
+
+4. Identify any tests that are missing, duplicated, or too weak to catch regressions.
+
+5. Check whether the model's actual behavior matches the existing UI fallbacks. Do not change the approved UI or architecture.
+
+## Restrictions
+- Do not edit or create files.
+- Do not change model behavior.
+- Do not add dependencies.
+- Do not commit or push.
+- Do not start T033 or any other Phase 6 task.
+
+## Report
+Return:
+1. Files inspected.
+2. Existing test coverage.
+3. Missing test cases.
+4. Any model or parsing risks, with exact file and line references.
+5. Recommended minimal test additions.
+6. Current test count and Flutter analyze result.
+
+Wait for approval before making changes.
+
+//-------  Repository and API Error Mapping Test Audit ----
+
+# Phase 6 — T033: Repository and API Error Mapping Test Audit
+
+**Project:** Newsly (`D:\Newsly`)  
+**Branch:** `ID-4`  
+**Task:** T033 — Repository/API error mapping tests  
+**Mode:** Strict read-only audit.
+
+## Objective
+Inspect the existing API client, exception handling, and Article/Blog repositories. Identify missing automated tests for error mapping and repository behavior.
+
+## Inspect
+- `lib/core/network/api_client.dart`
+- `lib/core/errors/api_exception.dart`
+- `lib/repositories/article_repository.dart`
+- `lib/repositories/blog_repository.dart`
+- Related ViewModels only where needed to understand error propagation.
+- Existing repository/API tests and test mocks.
+
+## Audit scenarios
+
+Check existing coverage for:
+
+1. Successful API responses.
+2. Connection errors and network-unavailable scenarios.
+3. Connection, send, and receive timeouts.
+4. HTTP 400, 401, 403, 404, 429, and 500 responses.
+5. Empty or malformed response bodies.
+6. Unexpected response data types.
+7. Invalid JSON parsing.
+8. Article and Blog list endpoint failures.
+9. Article and Blog detail endpoint failures.
+10. Missing detail records and not-found behavior.
+11. Whether original Dio exceptions are converted into the project's `ApiException` consistently.
+12. Whether repositories preserve useful error messages and avoid swallowing errors.
+
+## Important constraints
+- Do not modify files.
+- Do not make real network requests.
+- Do not change API contracts or production behavior.
+- Do not add dependencies.
+- Do not commit or push.
+- Do not start T034.
+
+Use the existing test infrastructure and mocks when assessing testability. Do not assume a test is missing without searching the entire `test/` directory.
+
+## Report
+Provide:
+1. Files inspected.
+2. Existing test coverage and exact test locations.
+3. Missing scenarios.
+4. Any potential production-code risks, with line references.
+5. Recommended minimal test additions.
+6. Current full test count and Flutter analyze result.
+
+Wait for approval before implementation.
+
+//------  T033: Implement Repository and API Error Mapping Tests-----------
+
+# Phase 6 — T033: Implement Repository and API Error Mapping Tests
+
+**Project:** Newsly (`D:\Newsly`)  
+**Branch:** `ID-4`  
+**Task:** T033  
+**Mode:** Test implementation only.
+
+## Objective
+Improve API exception mapping and repository test coverage using the existing test infrastructure.
+
+## Part A — ApiException mapping tests
+
+In the existing API exception test group, add focused tests for:
+
+1. `sendTimeout` and `receiveTimeout`.
+2. HTTP 400 with a custom `detail` message.
+3. HTTP 400 without a custom message, verifying the existing fallback.
+4. HTTP 401 and 403.
+5. HTTP 429, verifying the actual current mapping and message.
+6. HTTP 502 and 503.
+7. Request cancellation.
+8. Bad certificate.
+9. Preservation of `statusCode` and `originalError`, where applicable.
+
+Important: Assert the behavior implemented in `api_exception.dart`. Do not change production mapping to make tests pass.
+
+## Part B — Repository tests
+
+Use the existing `FakeApiClient` or equivalent test infrastructure.
+
+### ArticleRepositoryImpl
+Test:
+- `getArticleById` successful response, including the requested endpoint.
+- `getArticleById` 404 exception propagation.
+- `getArticleById` malformed response handling.
+- Existing `getArticles` success and invalid response tests must remain intact.
+- `getArticles` API exception propagation.
+
+### BlogRepositoryImpl
+Test:
+- `getBlogs` successful response with `limit`, `offset`, and `search`.
+- `getBlogs` malformed response handling.
+- `getBlogs` API exception propagation.
+- `getBlogById` 404 exception propagation.
+- `getBlogById` malformed response handling.
+- Existing successful `getBlogById` test must remain intact.
+
+### Malformed response cases
+Where relevant, test:
+- `null`
+- Empty string
+- List instead of Map
+- Unexpected primitive response
+- Map containing non-string keys
+
+For non-string map keys, document the actual behavior. If it throws a raw TypeError, record it as a production-code issue for separate review. Do not change repository implementation.
+
+## Part C — Duplicate test cleanup
+Inspect the two reported duplicate BlogViewModel pagination tests around the former lines 1200–1346.
+
+If they are genuinely identical:
+- Keep one complete test.
+- Remove only the duplicate.
+- Preserve all meaningful assertions.
+
+## Strict restrictions
+- Modify tests only.
+- Do not modify any files under `lib/`.
+- Do not add dependencies.
+- Do not change API exception mappings.
+- Do not change repositories or ViewModels.
+- Do not make real network requests.
+- Do not commit or push.
+- Do not start T034.
+
+If a test exposes a production defect, report it separately with the exact file and line reference.
+
+## Verification
+Run:
+- `dart format` on changed test files.
+- `flutter analyze`.
+- `flutter test`.
+- The foundation test suite independently.
+
+## Final report
+Include:
+1. Exact files changed.
+2. Tests added by category.
+3. Duplicate test removed, if confirmed.
+4. Total full-suite passing test count.
+5. Foundation test count.
+6. Flutter analyze result.
+7. Any tests that expose production risks.
+8. Confirmation that no production files were modified and no Git commit/push occurred.
+
+Wait for review before starting T034.
+
+
+//-------- phase 6-  T034: ViewModel State Transition Test Audit-------
+
+# Phase 6 — T034: ViewModel State Transition Test Audit
+
+**Project:** Newsly (`D:\Newsly`)  
+**Branch:** `ID-4`  
+**Task:** T034 — ViewModel state transition tests  
+**Mode:** Strict read-only audit.
+
+## Objective
+Audit ArticleViewModel and BlogViewModel state management and identify missing or weak tests.
+
+## Inspect
+- `lib/viewmodels/article_view_model.dart`
+- `lib/viewmodels/blog_view_model.dart`
+- `lib/repositories/article_repository.dart`
+- `lib/repositories/blog_repository.dart`
+- Existing ViewModel tests in `test/foundation_test.dart`
+- Any other tests that exercise ViewModel behavior.
+
+## Audit scenarios
+
+For both ArticleViewModel and BlogViewModel, check:
+
+1. Initial state.
+2. Initial loading followed by successful data retrieval.
+3. Initial loading followed by repository failure.
+4. Refresh success.
+5. Refresh failure while existing data is available.
+6. Load-more success and pagination updates.
+7. Load-more failure preserving existing data.
+8. Retry after pagination failure.
+9. Search query changes and debounce behavior.
+10. Category/filter changes and request behavior.
+11. Empty response and no-more-pages behavior.
+12. Duplicate request prevention.
+13. Concurrent refresh and pagination interactions.
+14. Disposal of timers/listeners and protection against state updates after disposal.
+
+## Constraints
+- Do not modify any files.
+- Do not make real network requests.
+- Do not add dependencies.
+- Do not change production behavior.
+- Do not commit or push.
+- Do not start T035.
+
+## Report
+Provide:
+1. Files inspected.
+2. Existing test coverage for both ViewModels.
+3. Missing scenarios and weak assertions.
+4. Potential state-management defects with exact file and line references.
+5. Recommended minimal test additions.
+6. Current full test count and Flutter analyze result.
+
+Wait for approval before implementing tests.
+
+//----------- Phase 6 — T034: ViewModel State Transition Test Implementation -------------------
+
+
+# Phase 6 — T034: ViewModel State Transition Test Implementation
+
+**Project:** Newsly (`D:\Newsly`)  
+**Branch:** `ID-4`  
+**Task:** T034 — ViewModel State Transition Tests  
+**Mode:** Test implementation only
+
+## Objective
+
+Strengthen automated state-transition test coverage for both `ArticleViewModel` and `BlogViewModel`, using the approved read-only audit as the implementation checklist.
+
+## Strict constraints
+
+1. Read the existing ViewModels, repositories, fake clients, and test helpers before editing.
+2. Modify tests only. Do not change production code, dependencies, architecture, UI, or API behavior.
+3. Preserve existing tests and project conventions.
+4. Reuse existing fake clients and fixtures where possible.
+5. Do not introduce arbitrary delays or flaky timing-based tests. Use controlled `Completer` requests for in-flight and concurrency scenarios.
+6. Do not commit or push.
+7. Do not claim live API verification.
+
+## ArticleViewModel tests
+
+Add or strengthen tests for:
+
+1. Complete initial state: state, articles, total count, loading flags, error fields, `hasError`, `isEmpty`, `hasMore`, search query and pagination error.
+2. Intermediate loading state followed by successful loaded state.
+3. Refresh success: verify refreshed results replace old results and pagination starts from the correct offset.
+4. Refresh failure: verify the actual state and whether previously loaded articles remain in memory.
+5. Pagination failure isolation: existing articles and loaded state remain intact while `paginationError` is populated.
+6. `retryLoadMore()`: a failed pagination request can be retried successfully.
+7. Search query preservation during pagination: verify the repository receives the active search query.
+8. Whitespace search normalization.
+9. Duplicate in-flight fetch and pagination request suppression.
+10. Load-more prevention during initial loading.
+11. No-more-pages gating.
+12. Disposal protection.
+
+## BlogViewModel tests
+
+Add or strengthen equivalent tests for:
+
+1. Complete initial state.
+2. Intermediate loading and successful loaded state.
+3. Initial fetch failure and error getters.
+4. Empty response and empty-state getters.
+5. Refresh success and failure, including preservation of existing data.
+6. Search and `clearSearch()`.
+7. Search query preservation during pagination.
+8. Pagination success, duplicate prevention and no-more-pages gating.
+9. Pagination failure isolation and `retryLoadMore()`.
+10. Disposal protection.
+
+## Concurrency and race-condition investigation
+
+Use controlled requests to investigate what happens when `loadMore()` is in progress and a refresh starts.
+
+- Verify whether stale pagination results can be appended to the refreshed list.
+- Verify the resulting item order and pagination offset.
+- Do not modify production code to make the test pass.
+- If current behavior is defective, document the failing test and the exact reproduction. Do not leave the entire suite failing without clearly reporting it; isolate the known failing regression test appropriately and explain the result.
+
+Also verify whether duplicate requests are genuinely suppressed for both ViewModels.
+
+## Important behavior distinctions
+
+- Do not assume that a refresh failure must preserve `ViewState.loaded`; test and document the current behavior.
+- Do not assume that an argumentless refresh should clear an existing search query; test the current behavior.
+- Do not invent expected behavior that the implementation does not currently define.
+- Do not test the DiscoverScreen debounce timer as a ViewModel responsibility. It belongs to `DiscoverScreenState`. Only test its integration if an existing suitable widget test already supports it.
+- Category chips map their selected category to the ViewModel search parameter. Test the ViewModel's search parameter handling, not UI debounce internals.
+
+## Validation
+
+Run:
+
+1. `dart format` on changed test files.
+2. `flutter analyze`.
+3. The focused foundation test suite.
+4. The complete `flutter test` suite.
+
+Report:
+- Files changed.
+- Tests added and their scenarios.
+- Focused and full test counts.
+- Analyzer result.
+- Any race-condition or behavioral defects discovered.
+- Any tests that could not be implemented and why.
+- Confirmation that no production files, dependencies, or Git history were changed.
+
+**Stop after T034. Do not begin T035 or any production bug fixes.**
+
+
+//--------phase 6 ViewModel Refresh and Pagination Bug Fixes ------------
+
+# Phase 6 — Pre-T035: ViewModel Refresh and Pagination Bug Fixes
+
+**Project:** Newsly (`D:\Newsly`)  
+**Branch:** `ID-4`  
+**Scope:** Article and Blog feed reliability  
+**Mode:** Minimal production bug fix
+
+## Objective
+
+Fix two confirmed defects reproduced by the T034 tests:
+
+1. Stale pagination results being appended after a refresh.
+2. Existing feed content becoming hidden after a failed pull-to-refresh.
+
+Apply the fixes consistently to both ArticleViewModel and BlogViewModel.
+
+## Mandatory first step
+
+Inspect the current implementation of:
+
+- `article_view_model.dart`
+- `blog_view_model.dart`
+- `discover_screen.dart`
+- `foundation_test.dart`
+- Existing refresh and pagination UI handling.
+
+Understand the current state transitions before editing.
+
+## Bug 1: Refresh and pagination race condition
+
+Reproduce and fix this sequence:
+
+1. Load the first page.
+2. Start `loadMore()` and keep its response pending using a Completer.
+3. Start a refresh request.
+4. Complete the refresh first with fresh first-page results.
+5. Complete the old pagination request afterward.
+
+Expected behavior:
+
+- Old pagination results must never be appended to the refreshed feed.
+- The refreshed first page must remain intact.
+- Pagination offset and `hasMore` must reflect the refreshed feed.
+- An obsolete request must not overwrite the loading flags or pagination state belonging to a newer request.
+- Normal pagination and refresh must continue working.
+
+Use a minimal, reliable request-generation or equivalent stale-response protection strategy. Do not introduce unnecessary architecture or dependencies.
+
+Apply the same protection to ArticleViewModel and BlogViewModel.
+
+## Bug 2: Failed refresh must preserve visible feed content
+
+When a feed already contains articles or blogs and a refresh request fails:
+
+- Keep the existing feed visible.
+- Do not transition to a full-screen error state.
+- Preserve the existing items and pagination data.
+- Communicate the refresh failure through an appropriate non-blocking UI message using existing project conventions, such as a SnackBar.
+- Initial fetch failures must continue displaying the existing full-page error and retry experience.
+- A successful refresh must still replace the old feed correctly.
+
+Do not redesign DiscoverScreen or change its approved visual reference.
+
+## Tests
+
+Update or add deterministic tests for both ViewModels:
+
+1. Pagination request completes after successful refresh.
+2. Pagination request completes after failed refresh.
+3. Obsolete pagination response cannot change the refreshed feed or pagination state.
+4. Failed refresh with existing data preserves loaded state and existing items.
+5. Initial fetch failure still produces the full-page error state.
+6. Successful refresh still replaces old items and resets pagination.
+7. Loading flags remain correct after overlapping requests.
+
+Update widget tests if needed to verify that a failed refresh does not hide the existing feed and that the user receives a non-blocking error message.
+
+Use controlled Completers. Do not use arbitrary sleeps.
+
+## Strict constraints
+
+- Preserve Provider + ChangeNotifier and the existing MVVM architecture.
+- Do not change API contracts, models, navigation, search behavior, or category selection.
+- No unrelated UI redesign or refactoring.
+- Do not weaken or delete the T034 regression tests merely to make them pass.
+- Do not add dependencies.
+- Do not commit or push.
+- Do not start T035.
+
+## Validation and report
+
+Run:
+
+1. `dart format` on changed files.
+2. `flutter analyze`.
+3. Focused ViewModel tests.
+4. Relevant DiscoverScreen widget tests.
+5. Complete `flutter test` suite.
+
+Report exact files changed, root causes, fix details, test results, and any remaining limitations.
+
+**Stop after these two bug fixes. Await review before T035.**
+
+
+//---------- phase 6 - final review ----------------
+
+# Pre-T035 — Final Read-Only Code Review
+
+**Project:** Newsly (`D:\Newsly`)  
+**Branch:** `ID-4`  
+**Mode:** Strict read-only audit. Do not edit files.
+
+Review the recent fixes to:
+
+- `lib/viewmodels/article_view_model.dart`
+- `lib/viewmodels/blog_view_model.dart`
+- `lib/views/screens/discover_screen.dart`
+- `test/foundation_test.dart`
+- `test/discover_screen_test.dart`
+
+## 1. Request-generation correctness
+
+Inspect both ViewModels and verify:
+
+1. Every asynchronous success, error and `finally` path checks whether its request generation is still current before mutating state or notifying listeners.
+2. An obsolete pagination response cannot modify items, total count, offset, `hasMore`, loading flags, error fields or listener notifications.
+3. A refresh invalidates an in-flight pagination request immediately.
+4. A failed refresh restores the previous pagination offset and does not leave pagination permanently disabled.
+5. A later valid `loadMore()` works after both successful and failed refreshes.
+6. The generation strategy does not accidentally suppress a legitimate new request.
+7. Disposal during overlapping requests cannot trigger `notifyListeners()` after disposal.
+
+Identify any path that is not protected.
+
+## 2. Refresh state and error handling
+
+Verify both Article and Blog ViewModels:
+
+1. Initial fetch failure still produces `ViewState.error`.
+2. Refresh failure with existing items retains `ViewState.loaded` and keeps the items visible.
+3. Refresh failure with no existing items still produces the full-page error state.
+4. `errorMessage` is cleared after a successful subsequent refresh or fetch.
+5. A previous refresh error cannot cause a SnackBar to appear after a later successful refresh.
+6. Pagination errors remain separate from refresh errors.
+7. Existing search/category filters are preserved correctly through refresh and pagination.
+
+## 3. DiscoverScreen integration
+
+Inspect both Articles and Blogs refresh handlers:
+
+1. Each handler awaits the correct ViewModel refresh.
+2. A SnackBar is displayed only for a refresh failure when existing feed items remain visible.
+3. A stale `errorMessage` cannot trigger an incorrect SnackBar.
+4. The correct feed is still visible after a failed refresh.
+5. No duplicate SnackBars or stale-context errors can occur if the screen is disposed during refresh.
+6. RefreshIndicator continues to complete correctly.
+
+## 4. Test quality
+
+Inspect the actual tests, not just the test report:
+
+- Confirm the race tests genuinely control response completion order with Completers.
+- Confirm assertions verify the complete resulting list and pagination state.
+- Confirm both successful-refresh and failed-refresh race scenarios are covered for both feeds.
+- Confirm widget tests verify the existing feed remains visible and the SnackBar appears.
+- Identify any missing assertions or tests that pass without proving the intended behavior.
+
+## 5. Output
+
+Return a concise audit report with:
+
+- PASS / PARTIAL / FAIL for each section.
+- Exact file and line references for findings.
+- Any remaining defects or edge cases.
+- Whether the implementation is safe to approve before T035.
+
+**Do not edit files, run automatic fixes, commit or push.**
+
+
+// shimmer implementation during List loading time - improve UX --------------------------
+
+# UX Improvement — Premium Shimmer Loading for Newsly
+
+**Project:** Newsly  
+**Location:** `D:\Newsly`  
+**IDE:** Antigravity
+
+## Objective
+
+Implement a polished, modern skeleton shimmer loading experience for the Articles and Blogs feeds.
+
+When users search, change keywords, select categories, switch between Articles and Blogs, or trigger a refresh, the feed should provide immediate visual feedback instead of appearing frozen or showing an empty delay.
+
+The shimmer must visually resemble the actual Newsly article cards and preserve the existing design language from the supplied Simple News App Flutter PDF.
+
+## 1. Mandatory: Inspect Existing Implementation First
+
+Before changing anything, inspect:
+
+- `discover_screen.dart`
+- `article_card.dart`
+- `article_view_model.dart`
+- `blog_view_model.dart`
+- `responsive_layout.dart`
+- `app_theme.dart`
+- `app_colors.dart`
+- `app_dimensions.dart`
+- Existing loading, search, category, refresh and pagination implementations.
+- Existing tests related to Discover and loading states.
+
+Understand the existing state transitions and determine exactly how search/category changes trigger API requests.
+
+Do not assume the existing ViewModel behavior.
+
+## 2. Shimmer Design
+
+Create a skeleton layout that resembles the existing ArticleCard.
+
+Each skeleton card should contain:
+
+- Rounded rectangular image placeholder on the left, matching the existing thumbnail dimensions.
+- Small rounded source-name placeholder.
+- One or two headline placeholder lines.
+- Small metadata placeholder for date and author information.
+- Consistent card spacing and padding.
+
+### Visual appearance
+
+- Use a subtle animated shimmer gradient.
+- Light theme: pale grey base with a soft lighter highlight.
+- Dark theme: dark grey base with a slightly lighter highlight.
+- Smooth continuous animation, without flashing or harsh contrast.
+- Rounded corners should match existing card image and content shapes.
+- Shimmer must respect the current theme and screen dimensions.
+
+Aim for a premium, understated appearance similar to professionally designed news applications.
+
+## 3. Loading Behavior
+
+### A. Initial feed loading
+
+When the Articles or Blogs feed initially loads:
+
+- Display approximately 5–6 skeleton cards.
+- Keep the existing Discover header, search field and category/filter controls visible.
+- Do not show a blank screen.
+- Replace skeletons with actual results once the API request succeeds.
+
+### B. Search keyword changes
+
+When the user enters a new search keyword:
+
+- Preserve the existing debounce behavior.
+- Show immediate loading feedback when the debounced API request starts.
+- Avoid displaying stale results as if they belong to the new search.
+- Display shimmer skeletons while the new search results are loading.
+- Replace them with matching results when the request completes.
+- Handle rapid keyword changes safely.
+
+### C. Category changes
+
+When a category is selected:
+
+- Immediately update the selected chip state.
+- Show shimmer while the category-filtered results are loading.
+- Display the new results after the API request completes.
+- Prevent old-category results from being mistaken for the newly selected category.
+
+### D. Articles / Blogs switching
+
+When switching between Articles and Blogs:
+
+- Preserve the existing independent feed state and search behavior.
+- If cached/current results are already available, display them immediately.
+- If that feed is still loading or has no results, display shimmer.
+- Do not unnecessarily restart requests or discard valid cached data.
+
+### E. Pull-to-refresh
+
+Preserve the existing pull-to-refresh behavior.
+
+Do not replace the entire feed with shimmer when refreshing an already populated feed.
+
+Keep existing cards visible and use the existing refresh indicator. If the refresh fails, preserve the current feed and existing nonblocking SnackBar behavior.
+
+### F. Pagination
+
+Do not show full-list shimmer when loading the next page.
+
+Keep existing cards visible and preserve the current pagination footer loader and retry behavior.
+
+## 4. Animation and Performance
+
+- Use an efficient shimmer implementation.
+- Prefer an existing dependency if one is already available and suitable.
+- If no dependency exists, evaluate whether a lightweight Flutter animation using existing framework APIs is sufficient.
+- Avoid adding a package unnecessarily.
+- Do not create excessive animation controllers.
+- Ensure animation resources are disposed correctly.
+- Avoid rebuilding the entire feed on every shimmer animation frame.
+- Respect reduced-motion/accessibility considerations where practical.
+
+## 5. Responsive and Accessibility Requirements
+
+- Phone: skeleton cards must match the existing single-column feed.
+- Tablet: skeleton layout must match the existing responsive grid.
+- Dark mode: appropriate shimmer colors.
+- Text scaling: no overflow or layout shifts.
+- Keep existing accessibility semantics for actual feed controls.
+- Mark decorative skeleton elements as excluded from semantics where appropriate, and provide a meaningful loading announcement for the feed.
+
+## 6. Architecture and Code Constraints
+
+- Follow the existing Provider + ChangeNotifier MVVM architecture.
+- Keep API and loading-state logic in the existing ViewModels.
+- Keep UI presentation in Discover screen/shared widgets.
+- Reuse existing theme and dimension constants.
+- Avoid modifying unrelated detail screens.
+- Do not introduce GetX, Bloc or another state-management solution.
+- Avoid unnecessary StatefulWidgets or new reusable widgets unless technically justified.
+- Do not redesign the Discover screen.
+- Preserve all existing navigation, search, category, refresh and pagination behavior.
+
+## 7. Automated Tests
+
+Add or update tests covering:
+
+1. Initial Articles loading displays skeleton cards.
+2. Initial Blogs loading displays skeleton cards.
+3. Search request displays shimmer while loading.
+4. Category change displays shimmer while loading.
+5. Switching feeds displays cached content where available.
+6. Switching to an unloaded feed displays shimmer.
+7. Successful API response replaces shimmer with actual cards.
+8. Failed initial request displays the existing error/retry state rather than shimmer indefinitely.
+9. Failed search handles errors correctly.
+10. Pull-to-refresh preserves existing cards.
+11. Pagination preserves existing cards and footer behavior.
+12. No shimmer remains after a request completes.
+13. Dark theme renders without errors.
+14. Tablet layout renders skeletons without overflow.
+
+Use deterministic tests and controlled asynchronous responses. Avoid arbitrary delays or flaky animation timing assertions.
+
+## 8. Verification
+
+Run:
+
+- `dart format` on modified Dart files.
+- `flutter analyze`
+- `flutter test`
+
+Verify that all existing tests continue passing.
+
+If possible, physically verify on the connected Android device:
+
+- Initial feed loading.
+- Search keyword changes.
+- Category selection.
+- Articles/Blogs switching.
+- Dark mode.
+
+## 9. Final Report
+
+Provide:
+
+- Files inspected.
+- Files modified.
+- Whether a new dependency was added and why.
+- Explanation of shimmer behavior for each loading scenario.
+- Test count and result.
+- Analyzer result.
+- Physical device verification results.
+- Any remaining issues.
+
+**Important:** Do not commit or push. Preserve existing uncommitted changes.
+
+//--------- Production Readiness, Performance Optimization & App Branding -------------
+
+# Newsly — Production Readiness Audit and Verification
+
+**Project:** Newsly Flutter App  
+**Project Path:** `D:\Newsly`  
+**IDE:** Antigravity  
+**Phase:** Production Optimization — Verification Stage  
+**Mode:** STRICT READ-ONLY AUDIT
+
+## Main Objective
+
+Perform a comprehensive audit of the existing Newsly Flutter application before implementing production-readiness improvements.
+
+The audit must identify:
+1. Unused and dead code that can safely be removed.
+2. Performance bottlenecks and optimization opportunities.
+3. The back button currently displayed on the first Discover screen that should be removed.
+4. Existing splash-screen configuration and the requirements for a new minimal branded splash screen.
+5. Existing launcher icon configuration and requirements for a custom Newsly app icon.
+
+**Important: This is only a verification task. Do not implement anything yet.**
+
+---
+
+# 1. Project Baseline and Current State
+
+Inspect and record:
+
+- Current Git branch and latest commit.
+- Git working tree status.
+- Flutter and Dart versions.
+- `pubspec.yaml` dependencies.
+- Android and iOS project configurations.
+- Current test suite count and results.
+- Current Flutter analyzer results.
+
+Preserve all existing uncommitted changes.
+
+Do not overwrite, discard, reset or revert any user changes.
+
+Do not commit or push.
+
+# 2. Dead-Code and Unused-Code Audit
+
+Inspect the complete application source, including:
+
+- `lib/`
+- `test/`
+- `pubspec.yaml`
+- Android configuration.
+- iOS configuration.
+
+Identify possible unused:
+
+- Dart files.
+- Classes and methods.
+- Functions.
+- Variables and fields.
+- Imports.
+- Constants and strings.
+- Widgets.
+- Dependencies.
+- Assets.
+- Old or duplicated implementations.
+- Debug-only code and unnecessary logging.
+- Obsolete commented-out code.
+
+For each candidate, report:
+
+| File | Symbol / Dependency | Reason it appears unused | Evidence | Removal risk |
+|---|---|---|---|---|
+
+### Strict dead-code rules
+
+- Do not delete anything during this audit.
+- Do not assume that a symbol is unused simply because it has no direct references.
+- Inspect indirect references, reflection, dependency injection, Provider registrations, routes, platform integrations and generated code.
+- Do not remove platform-specific code merely because it is unused on the currently tested platform.
+- Do not remove tests simply because they do not appear to affect application runtime.
+- Do not remove dependencies without checking transitive and platform usage.
+- Distinguish confirmed dead code from potential cleanup candidates.
+
+Classify findings as:
+- Confirmed safe to remove.
+- Likely unused — needs further verification.
+- Required — must retain.
+- Uncertain — do not remove.
+
+# 3. Performance Audit
+
+Inspect the application for production performance problems.
+
+### A. Flutter widget performance
+
+Check:
+- Unnecessary widget rebuilds.
+- Broad Provider listeners causing excessive rebuilds.
+- Opportunities to use `context.select`, `Selector` or existing targeted listening patterns.
+- Expensive operations inside `build()`.
+- Repeated object or widget creation.
+- Missing `const` constructors where useful.
+- Unnecessary nested layout widgets.
+- Inefficient list rendering.
+- Incorrect use of `ListView.builder`, `GridView.builder` or other lazy widgets.
+- Expensive animations and transitions.
+
+### B. Network and data performance
+
+Check:
+- Duplicate API requests.
+- Unnecessary refresh requests.
+- Search debounce behavior.
+- Pagination request handling.
+- Duplicate list items.
+- Excessive JSON parsing or repeated transformations.
+- Cache handling.
+- Timeout and retry behavior.
+
+Preserve the existing request-generation protection and refresh/pagination race-condition fixes.
+
+### C. Image performance
+
+Check:
+- `CachedNetworkImage` usage.
+- Image dimensions and memory usage.
+- Placeholder and error handling.
+- Unnecessary image reloads.
+- Whether large images are decoded at unnecessarily high resolutions.
+- Whether image caching is configured appropriately.
+
+Do not reduce image quality unnecessarily.
+
+### D. Memory and lifecycle
+
+Check:
+- Controllers and listeners.
+- Timers and debouncers.
+- Animation controllers.
+- Page controllers.
+- Scroll controllers.
+- Stream subscriptions.
+- Provider lifecycle and disposal.
+- Potential memory leaks.
+
+### E. Production performance verification
+
+Determine whether performance can be measured using Flutter DevTools or profile mode.
+
+Do not claim performance improvements without measurements.
+
+Report:
+- Confirmed issues.
+- Potential bottlenecks.
+- Recommended minimal fixes.
+- How each fix can be verified.
+
+# 4. Discover Screen — Remove the Back Button
+
+Inspect the first screen, especially:
+
+`lib/views/screens/discover_screen.dart`
+
+Find the back button currently displayed in the Discover screen header.
+
+Requirement for the future implementation:
+
+- Remove only this unnecessary back button from the initial Discover screen.
+- Preserve the Discover title and subtitle.
+- Rebalance the header spacing after removal.
+- Preserve the search field, filter control, categories and feeds.
+- Do not remove the back button from Article Detail or Blog Detail.
+- Do not change navigation behavior elsewhere.
+- Verify Android back-button behavior remains correct.
+
+During this audit, identify the exact widget and location that need modification. Do not modify them yet.
+
+# 5. Custom Newsly Splash Screen Verification
+
+Inspect the current splash-screen implementation:
+
+- Android launch theme and styles.
+- Android launch background.
+- Android 12+ splash-screen configuration.
+- iOS launch screen configuration.
+- Flutter startup initialization.
+- Existing splash-related dependencies.
+- Existing application icon assets.
+
+### Desired design
+
+The new splash screen should be minimal and branded:
+
+- Show only the custom Newsly app icon.
+- Center the icon.
+- Use a clean background consistent with Newsly branding.
+- No app name or text.
+- No tagline.
+- No buttons.
+- No loading indicators.
+- No unnecessary decorative elements.
+- No duplicated splash screens.
+
+The native launch screen should appear immediately while Flutter initializes.
+
+Avoid implementing an unnecessary delayed splash screen or artificial waiting period.
+
+Report the platform-specific changes required to implement this correctly.
+
+# 6. Custom Application Icon Verification
+
+Inspect:
+
+- `android/app/src/main/res/mipmap-*`
+- Android adaptive icon configuration.
+- `ios/Runner/Assets.xcassets/AppIcon.appiconset`
+- Any existing launcher icon generation configuration.
+- Existing brand colors and visual identity.
+
+### Desired icon direction
+
+A professional, recognizable Newsly icon:
+
+- Modern editorial/news identity.
+- Clean, simple and memorable.
+- A recognizable newspaper, news page or article-inspired symbol.
+- Appropriate contrast at small launcher sizes.
+- Consistent with the app's existing visual identity.
+- No tiny unreadable text.
+- No unnecessary detail.
+- No copied third-party brand identity.
+
+The same icon design should be used for Android and iOS, with appropriate platform-specific asset formats.
+
+Report the exact asset generation and configuration steps required.
+
+Do not generate or replace icon files during this verification task.
+
+# 7. Regression and Quality Requirements
+
+Inspect the existing tests and identify coverage needed for the future changes.
+
+The implementation must preserve:
+
+- Articles and Blogs feeds.
+- Search and category filtering.
+- Pull-to-refresh.
+- Pagination and retry behavior.
+- Article and Blog detail screens.
+- Swipe navigation: left = next, right = previous.
+- Bookmark functionality.
+- More Options actions.
+- Read Full Article external URL launching.
+- Responsive phone and tablet layouts.
+- Dark mode.
+- Text scaling.
+- Loading shimmer.
+- Offline and error handling.
+
+Identify tests required for:
+- Discover header without a back button.
+- Detail-screen back navigation still working.
+- Splash configuration.
+- Launcher icon configuration.
+- No regressions in existing tests.
+
+# 8. Final Audit Report
+
+Provide the report in the following structure:
+
+## A. Baseline
+Flutter/Dart versions, Git branch, working tree, tests and analyzer.
+
+## B. Dead-Code Findings
+Categorized table with exact files and symbols.
+
+## C. Performance Findings
+Prioritized issues with evidence and recommended fixes.
+
+## D. Discover Header
+Exact back-button implementation and safe removal approach.
+
+## E. Splash Screen
+Current configuration and required implementation changes.
+
+## F. App Icon
+Current icon configuration and recommended asset generation approach.
+
+## G. Files Expected to Change
+List exact files for each future implementation area.
+
+## H. Recommended Implementation Order
+Suggest a safe, incremental sequence.
+
+## I. Risks and Regression Tests
+Identify what could break and how to verify it.
+
+## Strict Final Constraints
+
+- This is a READ-ONLY verification task.
+- Do not edit, create, delete or rename files.
+- Do not add or remove dependencies.
+- Do not change Android or iOS configuration.
+- Do not generate images or icons.
+- Do not run automatic code cleanup that modifies files.
+- Do not commit or push.
+- Preserve the complete existing Git working tree.
+
+**The final output must be an evidence-based audit, not a list of guesses.**
+
+
+//---------- optimization ------------------
+
+# Newsly — Phase 2: Safe Dead-Code and Unused Dependency Cleanup
+
+**Project:** `D:\Newsly`
+
+## Objective
+
+Remove confirmed unused code and dependencies to keep the Newsly codebase clean and maintainable.
+
+This phase is strictly limited to the items identified in the production-readiness audit. Do not perform broader refactoring.
+
+## Step 1: Inspect before editing
+
+Before making changes:
+
+1. Check `git status --short`.
+2. Check `git diff -- lib/views/screens/foundation_preview_screen.dart`.
+3. Inspect the current contents of every target file.
+4. Search the entire repository for every proposed symbol, including `lib/`, `test/`, Android, iOS and configuration files.
+5. Check whether any target file contains existing user modifications.
+
+If a target file contains existing modifications unrelated to this task, preserve them. Do not overwrite or discard them.
+
+## Step 2: Remove the obsolete preview screen
+
+Target:
+
+`lib/views/screens/foundation_preview_screen.dart`
+
+- Confirm that `FoundationPreviewScreen` has no active imports, routes, references or test dependencies.
+- If confirmed, delete this obsolete preview screen.
+- Do not delete `test/foundation_test.dart` or any model tests. Those tests validate model parsing and are not the obsolete preview screen.
+
+If any unexpected dependency is discovered, retain the file and report it instead.
+
+## Step 3: Remove confirmed unused AppStrings
+
+Target:
+
+`lib/core/constants/app_strings.dart`
+
+Recheck and remove only these unused constants if they still have zero references:
+
+- `AppStrings.more`
+- `AppStrings.appTagline`
+- `AppStrings.settings`
+- `AppStrings.readMore`
+- `AppStrings.searchHint`
+- `AppStrings.publishedOn`
+
+Important:
+- Preserve `AppStrings.moreOptions`.
+- Preserve all active UI labels, accessibility labels, error messages and navigation strings.
+- Do not rename or change existing strings.
+
+## Step 4: Remove unused AppConstants
+
+Target:
+
+`lib/core/constants/app_constants.dart`
+
+Remove only:
+
+- `AppConstants.maxCacheAge`
+- `AppConstants.maxCacheObjects`
+
+Verify that neither is used by active code, tests or configuration.
+
+Preserve search debounce, pagination and all other active constants.
+
+## Step 5: Remove unused AppDimensions
+
+Target:
+
+`lib/core/constants/app_dimensions.dart`
+
+Remove only the confirmed unused constants:
+
+- `cardImageHeight`
+- `cardImageHeightCompact`
+- `thumbnailSize`
+- `iconSizeSmall`
+- `iconSizeLarge`
+- `iconSizeXLarge`
+
+Do not change any spacing, sizing or responsive layout values currently used by the application.
+
+## Step 6: Remove unused AppColors
+
+Target:
+
+`lib/core/constants/app_colors.dart`
+
+Remove only:
+
+- `warning`
+- `warningLight`
+- `successLight`
+
+Verify all references before removal. Preserve every active light-mode and dark-mode color.
+
+## Step 7: Remove unused dependency
+
+Target:
+
+`pubspec.yaml`
+
+- Remove `cupertino_icons` only after confirming there are no `CupertinoIcons` references anywhere in the project.
+- Do not remove or upgrade any other dependency.
+- Do not modify the package description or unrelated metadata.
+- Run `flutter pub get` to update dependency resolution and `pubspec.lock`.
+
+## Step 8: Verification
+
+Run:
+
+```bash
+flutter analyze
+flutter test
+flutter pub deps
+```
+
+Confirm:
+
+- No missing imports or undefined symbols.
+- No analyzer warnings or errors.
+- All existing tests pass.
+- Provider, Dio, cached_network_image, url_launcher, shared_preferences and share_plus remain available.
+- No active feature has been affected.
+
+If any test fails, investigate and fix only regressions caused by this cleanup. Do not weaken or delete tests to obtain a passing result.
+
+## Strict restrictions
+
+- Do not modify Discover UI or detail screens.
+- Do not modify shimmer, bookmark, sharing or responsive-layout implementations.
+- Do not perform performance optimization yet.
+- Do not generate app icons or splash assets.
+- Do not change Android or iOS configuration.
+- Do not format unrelated files.
+- Do not add or upgrade dependencies.
+- Do not commit or push.
+- Preserve all existing modifications and untracked files, including `Simple News App Flutter.pdf`.
+
+## Final report
+
+Provide:
+
+1. Exact files modified and deleted.
+2. Symbols and dependency removed.
+3. Reference-search evidence for each removal.
+4. `flutter pub get` result.
+5. `flutter analyze` result.
+6. Full test count and pass/fail result.
+7. Final `git status --short`.
+8. Confirmation that existing features and user changes were preserved.
+
+**Stop after Phase 2. Wait for approval before beginning performance optimization.**
+
+
+//----------- report implementation ----------------
+
+# Newsly — Complete Reports Feature Implementation
+
+**Project:** `D:\Newsly`
+
+## Objective
+
+Integrate the Spaceflight News API Reports functionality into the existing Newsly Flutter application.
+
+The application already supports Articles and Blogs. Extend the existing architecture to support Reports as a third content type, maintaining the existing UI design, navigation patterns, state management, code quality, and user experience.
+
+The Reports implementation must feel like a natural extension of Articles and Blogs, not a separate application or redesigned feature.
+
+---
+
+# 1. Mandatory Existing Project Architecture
+
+Before implementation, inspect the complete existing project and understand:
+
+- Current folder structure.
+- Article and Blog implementations.
+- API client and endpoint configuration.
+- Models and JSON serialization.
+- Repository interfaces and implementations.
+- ViewModels and ChangeNotifier patterns.
+- Provider registration and dependency injection.
+- Discover screen and content switching.
+- Article and Blog detail screens.
+- Shared widgets and reusable UI components.
+- Bookmark repository and ViewModel.
+- Existing test conventions.
+
+Follow the existing architecture:
+
+**Provider + ChangeNotifier with MVVM**
+
+Expected structure:
+
+- Model: `lib/models/`
+- Repository: `lib/repositories/`
+- ViewModel: `lib/viewmodels/`
+- Screens: `lib/views/screens/`
+- Shared widgets: `lib/shared/widgets/`
+- Constants: `lib/core/constants/`
+
+Use the existing Dio-based ApiClient.
+
+Do not introduce GetX, Bloc, Riverpod, or another state-management solution.
+
+Do not unnecessarily duplicate existing implementations.
+
+## Important constraints
+
+- Preserve Articles and Blogs completely.
+- Do not redesign existing screens.
+- Follow existing naming conventions.
+- Reuse existing components wherever appropriate.
+- Maintain null safety and typed error handling.
+- Avoid unnecessary StatefulWidgets and abstractions.
+- Do not introduce hardcoded API response data.
+- Do not change unrelated functionality.
+- Preserve existing uncommitted changes.
+- Never commit or push without explicit permission.
+
+The supplied `Simple News App Flutter.pdf` pages 2 and 3 remain the visual reference for the Discover and Detail screens.
+
+---
+
+# 2. Spaceflight News API
+
+Use the existing Spaceflight News API v4 configuration.
+
+Reports endpoints:
+
+- GET `/v4/reports/`
+- GET `/v4/reports/{id}/`
+
+Collection endpoint supports pagination and search.
+
+Use the actual API response structure.
+
+Expected Report fields include:
+
+- `id`
+- `title`
+- `url`
+- `image_url`
+- `news_site`
+- `summary`
+- `published_at`
+- `updated_at`
+- `authors`
+
+Do not fabricate authors, publishers, dates, summaries, or other metadata.
+
+Do not integrate GraphQL or the Info API as part of this Reports implementation.
+
+---
+
+# 3. Phase A — Report Model and API Endpoints
+
+Create:
+
+`lib/models/report_model.dart`
+
+Implement:
+
+### Report model
+
+- Parse the actual API JSON response.
+- Support nullable fields safely.
+- Parse integer IDs safely.
+- Handle missing or malformed optional values.
+- Parse publication and update dates safely.
+- Reuse the existing Author model from the Article implementation if compatible.
+- Follow the existing model conventions.
+
+### PaginatedReports model
+
+Support:
+
+- `count`
+- `next`
+- `previous`
+- `results`
+
+Handle null and empty results safely.
+
+Modify:
+
+`lib/core/constants/api_endpoints.dart`
+
+Add:
+
+- Reports collection endpoint.
+- Report detail endpoint using a dynamic ID.
+
+Create comprehensive unit tests:
+
+`test/report_model_test.dart`
+
+Test:
+- Valid JSON parsing.
+- Missing optional fields.
+- Null values.
+- Empty authors.
+- Invalid date values.
+- String and integer ID handling.
+- Pagination response parsing.
+- Empty results.
+
+Do not implement the repository, ViewModel, or UI during this phase.
+
+Run tests and analyzer before completing the phase.
+
+---
+
+# 4. Phase B — Report Repository
+
+Create:
+
+`lib/repositories/report_repository.dart`
+
+Follow the existing Article and Blog repository patterns.
+
+Implement:
+
+### Repository interface
+
+Provide methods for:
+
+- Fetching paginated Reports.
+- Fetching an individual Report by ID.
+
+Collection method should support:
+
+- `limit`
+- `offset`
+- Optional `search`
+
+Detail method should accept a Report ID.
+
+### Implementation requirements
+
+- Use the existing shared ApiClient.
+- Use existing API endpoint constants.
+- Parse responses using Report and PaginatedReports models.
+- Use existing typed ApiException handling.
+- Handle invalid IDs safely.
+- Handle malformed API responses.
+- Do not create a separate Dio client.
+- Do not duplicate API infrastructure.
+
+Create:
+
+`test/report_repository_test.dart`
+
+Test:
+- Successful collection response.
+- Successful detail response.
+- Pagination parameters.
+- Search query parameters.
+- Empty search handling.
+- Invalid Report ID.
+- API errors.
+- Malformed response.
+- Correct endpoint usage.
+
+Do not implement the ViewModel or UI during this phase.
+
+---
+
+# 5. Phase C — Report ViewModel
+
+Create:
+
+`lib/viewmodels/report_view_model.dart`
+
+Use ChangeNotifier and follow the existing ArticleViewModel and BlogViewModel conventions.
+
+Inject ReportRepository through the constructor.
+
+Implement state management for:
+
+- Reports list.
+- Initial loading.
+- Loading more.
+- Refreshing.
+- Empty state.
+- Error state.
+- Pagination error.
+- Search query.
+- Total count.
+- Current offset.
+- Has more data.
+
+### Fetch Reports
+
+Support:
+- Initial feed loading.
+- Pagination.
+- Search.
+- Refresh.
+
+### Pagination
+
+- Use the existing pagination conventions and default page size.
+- Prevent duplicate concurrent pagination requests.
+- Use loaded item count or the existing pagination convention to calculate the next offset.
+- Prevent duplicate Report IDs.
+- Respect the API's pagination information.
+
+### Search
+
+- Support search through the repository.
+- Use a 500 ms debounce.
+- Reset pagination when the query changes.
+- Prevent stale search responses from overwriting newer results.
+
+### Refresh
+
+- Reload the first page.
+- Reset pagination correctly.
+- Preserve existing Reports if refresh fails.
+- Expose a useful error state without unnecessarily removing already displayed content.
+
+### Prefetching
+
+Implement `prefetchIfNeeded(index, threshold: 3)` or follow the equivalent existing Article/Blog implementation.
+
+Avoid duplicate requests and unnecessary API calls.
+
+### Lifecycle
+
+- Cancel pending debounce timers during disposal.
+- Prevent stale responses from updating disposed state.
+- Dispose resources correctly.
+
+Create:
+
+`test/report_view_model_test.dart`
+
+Cover:
+- Initial loading.
+- Successful fetching.
+- Empty responses.
+- API failures.
+- Pagination.
+- Duplicate prevention.
+- Concurrent requests.
+- Search debounce.
+- Search pagination reset.
+- Stale response handling.
+- Refresh success.
+- Refresh failure with existing data.
+- Prefetching.
+- Disposal.
+
+Do not implement the UI during this phase.
+
+---
+
+# 6. Phase D — Reports UI and Navigation
+
+Integrate Reports into the existing Discover experience.
+
+Inspect the current Discover implementation before changing it.
+
+## A. Provider registration
+
+Modify:
+
+`lib/main.dart`
+
+Register ReportRepository and ReportViewModel using the existing Provider dependency-injection approach.
+
+Reuse the existing ApiClient.
+
+Preserve existing Article and Blog providers.
+
+Avoid duplicate service instances.
+
+## B. Discover screen
+
+Modify:
+
+`lib/views/screens/discover_screen.dart`
+
+Add Reports as the third content type alongside:
+
+- Articles
+- Blogs
+- Reports
+
+Integrate Reports into the existing Explore Content/filter sheet.
+
+Preserve the existing design and interaction patterns.
+
+### Reports feed
+
+Implement:
+- Report cards.
+- Report thumbnails.
+- Publisher information.
+- Report title.
+- Publication date.
+- Existing loading/shimmer patterns.
+- Empty state.
+- Error state.
+- Pull-to-refresh.
+- Pagination.
+- Search.
+- Prefetching.
+
+Reuse the existing ArticleCard where possible through an appropriate adapter or factory constructor.
+
+Do not redesign the card UI.
+
+### Search and category chips
+
+Maintain independent search and selected-category state for Articles, Blogs, and Reports.
+
+For Reports, support the existing chip labels:
+
+- All
+- SpaceX
+- NASA
+- ESA
+- SpaceNews
+- Science
+
+Use the existing API search mechanism for non-All selections, rather than pretending these are server-provided publisher filters.
+
+When All is selected, restore the unfiltered Reports feed.
+
+Use the existing 500 ms debounce pattern.
+
+Ensure switching between content types does not accidentally overwrite their search queries or scroll positions.
+
+### Scrolling and pagination
+
+- Maintain a separate Reports scroll controller.
+- Preserve independent feed state.
+- Prevent duplicate pagination requests.
+- Dispose controllers properly.
+- Follow the existing responsive grid behavior.
+
+## C. Report Detail screen
+
+Create:
+
+`lib/views/screens/report_detail_screen.dart`
+
+Use ArticleDetailScreen and BlogDetailScreen as implementation references.
+
+Follow the existing Detail screen design.
+
+Include:
+
+- Hero image.
+- Dark gradient overlay.
+- Floating back button.
+- Bookmark button.
+- More Options button.
+- Report title.
+- Publisher information.
+- Publication date.
+- Summary.
+- Primary Read Full Report CTA.
+- Existing missing-image and missing-data fallbacks.
+
+Maintain existing visual dimensions, typography, spacing, colors, rounded surfaces, and transitions.
+
+### Navigation
+
+- Support opening a Report from its feed card.
+- Support navigation back to the Reports feed.
+- Preserve the existing swipe-based detail navigation pattern where appropriate.
+- Support opening a Report directly by ID when required.
+- Reuse an already-loaded Report when available.
+- Fetch the Report by ID if it is not available in memory.
+- Display loading, retry, and API error states correctly.
+
+### External URL
+
+The Read Full Report action must:
+
+- Validate the URL.
+- Allow only HTTP and HTTPS schemes.
+- Open the original Report URL using the existing URL launcher pattern.
+- Handle failures gracefully.
+
+## D. Report bookmarks
+
+Extend the existing bookmark implementation.
+
+Modify:
+
+- `lib/repositories/bookmark_repository.dart`
+- `lib/viewmodels/bookmark_view_model.dart`
+
+Requirements:
+
+- Maintain a separate SharedPreferences key: `newsly_bookmarked_reports`.
+- Store Report IDs independently from Article and Blog IDs.
+- Prevent ID collisions between content types.
+- Support checking Report bookmark state.
+- Support toggling Report bookmarks.
+- Persist changes immediately.
+- Notify listeners so the detail-screen bookmark icon updates reactively.
+- Restore saved Report IDs when the repository initializes.
+
+Do not create a new bookmark storage system.
+
+Do not claim a dedicated Bookmarks screen exists unless one is actually implemented. This integration only adds Report bookmark storage and detail-screen interactions.
+
+## E. More Options sheet
+
+Reuse the existing:
+
+`lib/views/widgets/detail_more_options_sheet.dart`
+
+Support Report-specific actions:
+
+- Share Report.
+- Copy Report URL.
+- Open original Report.
+
+Reuse existing share, clipboard, and URL-launching services.
+
+Do not duplicate these services.
+
+---
+
+# 7. Testing Requirements
+
+Create or update tests for:
+
+### Models
+- Report parsing.
+- Pagination parsing.
+- Missing and malformed data.
+
+### Repository
+- API requests.
+- Search parameters.
+- Pagination.
+- Detail fetching.
+- Error handling.
+
+### ViewModel
+- Loading.
+- Search.
+- Pagination.
+- Refresh.
+- Prefetch.
+- Duplicate requests.
+- Error handling.
+- Disposal.
+
+### UI
+- Reports feed.
+- Content switching.
+- Report Detail.
+- Navigation.
+- Bookmark interaction.
+- More Options.
+- Provider registration.
+
+Update existing tests only when necessary.
+
+Do not delete or weaken existing Article or Blog tests to make the suite pass.
+
+---
+
+# 8. Final Verification
+
+After completing implementation:
+
+1. Run `flutter pub get` only if necessary.
+2. Run `flutter analyze`.
+3. Run the complete `flutter test` suite.
+4. Build an Android debug APK.
+5. If a physical Android device is connected, install and verify the new Reports functionality only with appropriate authorization.
+
+Report:
+
+- All created files.
+- All modified files.
+- API integration details.
+- Test counts and failures.
+- Analyzer result.
+- Build result.
+- Physical-device checks actually performed.
+- Known limitations.
+
+Do not claim manual device verification based only on automated tests.
+
+## Final acceptance criteria
+
+- Articles continue working.
+- Blogs continue working.
+- Reports work as a third content type.
+- Reports use the existing API client and MVVM architecture.
+- Report search and pagination work.
+- Report Detail navigation works.
+- Report bookmarking persists independently.
+- Sharing, copying, and external opening work.
+- Existing UI remains consistent with the supplied PDF references.
+- No unrelated functionality is removed or redesigned.
+- No commits or pushes are performed.
+
+**Important:** Implement incrementally. Inspect before editing, preserve existing work, and report each completed phase accurately.
+
+//----- performance and app size optimization----
+
+# Newsly — Production Performance & App Size Optimization
+
+**Project:** `D:\Newsly`
+
+**Objective:** Reduce application size and improve runtime performance, startup speed, memory efficiency, and responsiveness without affecting any existing functionality, UI, design, navigation, or user experience.
+
+## 1. Non-negotiable rules
+
+- First inspect the complete existing project and understand its architecture.
+- Preserve the current UI exactly: spacing, colors, typography, images, dimensions, animations, layouts, and interactions.
+- Do not redesign or simplify any screen.
+- Do not remove or disable any feature.
+- Preserve Articles, Blogs, Reports, search, filters, pagination, prefetching, pull-to-refresh, bookmarks, detail navigation, sharing, clipboard, external browser opening, splash screen, dark mode, and responsive layouts.
+- Preserve Provider + ChangeNotifier and the existing MVVM architecture.
+- Preserve Dio, repositories, typed API errors, and existing dependency injection.
+- Do not replace packages or state management just for optimization.
+- Preserve all existing uncommitted and untracked changes.
+- Do not run `git reset`, `git clean`, stash, or destructive commands.
+- Do not commit or push.
+- Do not change package ID, bundle ID, signing configuration, or app identity.
+- Never claim performance improvements without measurements.
+- If an optimization risks changing UI or behavior, do not apply it. Explain the risk instead.
+
+## 2. Establish a baseline before changes
+
+Inspect the current build configuration and collect baseline measurements.
+
+Record:
+- Flutter and Dart versions.
+- Android Gradle Plugin, Gradle, and Kotlin versions.
+- Current dependencies and their actual usage.
+- Existing APK/AAB size, if available.
+- Release APK size and architecture-specific APK sizes, if possible.
+- App startup time, if a physical device is available.
+- Initial feed loading time.
+- Scroll performance and frame timing, if measurable.
+- Memory usage during Discover and Detail screens, if measurable.
+- Existing build warnings and analyzer issues.
+
+Do not compare debug APK size against release APK size. Use equivalent build types when comparing before and after.
+
+## 3. Reduce Android application size
+
+Inspect and safely optimize:
+
+### A. Release build configuration
+- Verify release builds use Dart AOT compilation and tree shaking.
+- Check whether `--split-per-abi` is appropriate for APK distribution.
+- Check Android resource shrinking and code shrinking.
+- Evaluate R8 and ProGuard only where safe.
+- Enable `minifyEnabled` and `shrinkResources` only if compatible with the existing Gradle configuration and all required plugin/platform functionality.
+- Do not enable obfuscation or shrinking blindly.
+- Preserve required reflection, plugin registration, native resources, and platform integrations.
+
+### B. Flutter assets
+- Identify large assets and duplicate files.
+- Check whether all bundled assets are actually referenced.
+- Check image dimensions and formats.
+- Optimize oversized raster images without visibly changing their appearance.
+- Do not lower image quality noticeably.
+- Preserve the Newsly launcher icon and splash assets.
+- Remove nothing unless it is confirmed unused and safe.
+
+### C. Dependencies
+- Identify packages that add unnecessary size.
+- Inspect transitive dependencies.
+- Remove a dependency only if it is confirmed unused throughout Dart, Android, iOS, tests, and configuration.
+- Do not replace stable packages with alternatives merely to save a few kilobytes.
+- Avoid adding new dependencies unless there is a clear measurable benefit.
+
+### D. Native resources
+- Inspect Android and iOS assets and resources for safe size optimizations.
+- Preserve launcher icons, splash screen resources, app metadata, permissions, and plugin requirements.
+- Do not remove resources referenced indirectly by native configuration.
+
+## 4. Improve Flutter runtime performance
+
+Inspect and optimize the existing implementation.
+
+### A. Widget rebuilds
+- Identify unnecessary broad Provider subscriptions.
+- Use targeted `Consumer`, `Selector`, or `context.select` only where appropriate.
+- Prevent unrelated screens and feed items from rebuilding unnecessarily.
+- Preserve the current visual output and Provider behavior.
+- Do not introduce unnecessary StatefulWidgets or new abstractions.
+
+### B. Lists and scrolling
+- Inspect Articles, Blogs, and Reports list implementations.
+- Verify lazy list/grid construction.
+- Avoid rebuilding the entire feed for individual item changes.
+- Check pagination and prefetch triggers for duplicate requests.
+- Preserve scroll positions and independent feed state.
+- Keep existing card dimensions and visual appearance unchanged.
+
+### C. Images and memory
+- Inspect `CachedNetworkImage` usage.
+- Verify image cache dimensions are appropriate for their rendered size and device pixel ratio.
+- Avoid decoding images at unnecessarily large resolutions.
+- Prevent repeated image decoding and unnecessary image requests.
+- Check memory cache and disk cache settings.
+- Avoid excessive cache sizes.
+- Preserve current image cropping, aspect ratio, and visual quality.
+- Handle missing and failed images using existing fallbacks.
+
+### D. API and asynchronous work
+- Inspect unnecessary duplicate API calls.
+- Preserve the current search debounce behavior unless measurements demonstrate a safe improvement.
+- Check request cancellation and stale-response protection.
+- Preserve refresh behavior and existing error messages.
+- Avoid unnecessary JSON parsing or repeated model conversions.
+- Do not introduce caching that could display stale content or break refresh behavior.
+
+### E. Startup and splash
+- Inspect startup initialization and dependency creation.
+- Avoid blocking the first Flutter frame with nonessential work.
+- Initialize noncritical services lazily where safe.
+- Preserve the current splash design, icon size, and intended approximately 3-second duration.
+- Do not introduce a second splash screen or change navigation behavior.
+- Measure startup stages when possible.
+
+### F. Memory and lifecycle
+- Inspect timers, controllers, listeners, subscriptions, and animation resources.
+- Confirm they are disposed correctly.
+- Look for memory leaks, retained BuildContexts, and unnecessary object retention.
+- Avoid caching entire feeds or images unnecessarily.
+- Preserve detail navigation and swipe behavior.
+
+## 5. iOS safety
+
+Inspect whether any changes could affect iOS builds.
+
+- Preserve iOS app icons and LaunchScreen.
+- Preserve plugin registration and required native resources.
+- Avoid Android-only configuration changes that accidentally affect iOS.
+- Do not claim iOS verification if the environment cannot build iOS.
+
+## 6. Implementation rules
+
+After the baseline:
+1. List proposed optimizations with expected benefit and risk.
+2. Apply only safe, measurable, low-risk optimizations.
+3. Make small, focused changes.
+4. Avoid unrelated cleanup or UI modifications.
+5. Inspect the Git diff before and after changes.
+6. Preserve every existing user change.
+7. If a proposed change might affect functionality, leave it unchanged and report it.
+
+Do not spend time on theoretical micro-optimizations without a measurable benefit.
+
+## 7. Regression verification
+
+After implementation, run:
+
+- `flutter pub get` only if necessary and safe.
+- `flutter analyze`
+- `flutter test`
+- Android release APK build.
+- Android App Bundle build if the environment permits.
+- Compare before/after release artifact sizes.
+- Check the final APK/AAB architecture and asset breakdown where possible.
+
+If a physical device is available, verify:
+- Cold launch and splash.
+- Discover screen and all three feeds.
+- Search and category chips.
+- Pagination and prefetch.
+- Pull-to-refresh and offline error behavior.
+- Article, Blog, and Report detail navigation.
+- Bookmark toggle and persistence.
+- Read Full Article and external URL actions.
+- Dark mode.
+- Scrolling and image rendering.
+
+Do not claim physical-device testing unless it actually occurred.
+
+## 8. Final report
+
+Provide:
+
+### A. Before vs After measurements
+| Metric | Before | After | Improvement |
+Include actual APK/AAB size, startup timings, memory and frame metrics where available.
+
+### B. Files changed
+List every changed file and the reason.
+
+### C. Optimizations implemented
+Explain each optimization and why it is safe.
+
+### D. Features and UI preservation
+Confirm which features were regression-tested. Explicitly list anything not verified.
+
+### E. Build and test results
+Give exact commands, test counts, analyzer results, build results, and warnings.
+
+### F. Remaining opportunities
+List further optimizations that were intentionally not applied because of risk or lack of measurable benefit.
+
+### G. Git safety
+Report branch, HEAD, and final `git status --short`. Confirm no commits or pushes were made.
+
+**Final requirement:** The app must look and behave exactly as it did before optimization. A smaller app or faster benchmark is not acceptable if any existing feature, visual detail, or user interaction is broken.
+
+Stop after completing the report. Do not commit or push.
